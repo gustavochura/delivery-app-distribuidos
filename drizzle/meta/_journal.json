@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1779497004168,
+      "tag": "0000_stormy_shape",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1779500482788,
+      "tag": "0001_sour_ben_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1779501708805,
+      "tag": "0002_tan_mongu",
+      "breakpoints": true
+    }
+  ]
+}

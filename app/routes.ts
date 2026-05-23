@@ -1,3 +1,25 @@
-import { type RouteConfig, index } from "@react-router/dev/routes";
+import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
-export default [index("routes/home.tsx")] satisfies RouteConfig;
+export default [
+  index("routes/home.tsx"),
+  route("api/auth/*", "routes/api.auth.$.ts"),
+  route("sign-in", "routes/sign-in.tsx"),
+  route("sign-up", "routes/sign-up.tsx"),
+  route("dashboard", "routes/dashboard.tsx"),
+  route("cliente/home", "routes/cliente.home.tsx"),
+  route("cliente/restaurantes", "routes/cliente.restaurantes.tsx"),
+  route("cliente/restaurantes/:restaurante_id", "routes/cliente.restaurante-detalle.tsx"),
+  route("cliente/carrito", "routes/cliente.carrito.tsx"),
+  route("cliente/checkout", "routes/cliente.checkout.tsx"),
+  route("cliente/pedidos/:pedido_id", "routes/cliente.pedido-detalle.tsx"),
+  route("cliente/pedidos/:pedido_id/seguimiento", "routes/cliente.seguimiento.tsx"),
+  route("restaurante/pedidos", "routes/restaurante.pedidos.tsx"),
+  route("restaurante/pedidos/:pedido_id", "routes/restaurante.pedido-detalle.tsx"),
+  route("restaurante/productos", "routes/restaurante.productos.tsx"),
+  route("repartidor/home", "routes/repartidor.home.tsx"),
+  route("repartidor/pedidos/asignado", "routes/repartidor.pedido-asignado.tsx"),
+  route("repartidor/pedidos/:pedido_id/mapa", "routes/repartidor.mapa.tsx"),
+  route("admin/dashboard", "routes/admin.dashboard.tsx"),
+  route("admin/pedidos", "routes/admin.pedidos.tsx"),
+  route("admin/usuarios", "routes/admin.usuarios.tsx"),
+] satisfies RouteConfig;
