@@ -1,6 +1,8 @@
-import { Link, useNavigate } from "react-router";
+import { Link, redirect, useNavigate } from "react-router";
 import { useState } from "react";
 import { signIn } from "~/lib/auth-client";
+import { auth } from "~/lib/auth.server";
+import type { Route } from "./+types/sign-in";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import {
@@ -12,6 +14,12 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (session) throw redirect("/");
+  return {};
+}
 
 export function meta() {
   return [
@@ -36,7 +44,7 @@ export default function SignIn() {
       const result = await signIn.email(
         { email, password },
         {
-          onSuccess: () => navigate("/dashboard"),
+          onSuccess: () => navigate("/"),
           onError: (ctx) => setError(ctx.error.message),
         },
       );
