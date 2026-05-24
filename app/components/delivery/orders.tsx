@@ -3,28 +3,41 @@ import { MapPinned } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
-import { order, restaurantOrders, timeline } from "~/data/mock-delivery";
 import { StatusBadge } from "./common";
 
-export function OrderCard({
-  item,
-  href,
-}: {
-  item: typeof order | (typeof restaurantOrders)[number];
-  href: string;
-}) {
+export type PedidoSummary = {
+  id: number;
+  restauranteNombre: string;
+  createdAt: string;
+  estado: string;
+  total: number;
+};
+
+export type PedidoItem = {
+  productoNombre: string;
+  cantidad: number;
+  precioUnitario: number;
+  subtotal: number;
+};
+
+export type TimelineStep = {
+  label: string;
+  completado: boolean;
+};
+
+export function OrderCard({ item, href }: { item: PedidoSummary; href: string }) {
   return (
     <Card>
       <CardContent className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-medium">Pedido #{item.id}</p>
           <p className="text-sm text-muted-foreground">
-            {item.restaurant.name} · {item.createdAt}
+            {item.restauranteNombre} · {item.createdAt}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <StatusBadge status={item.status} />
-          <p className="font-semibold">S/ {item.total.toFixed(2)}</p>
+          <StatusBadge status={item.estado} />
+          <p className="font-semibold">S/ {(item.total / 100).toFixed(2)}</p>
           <Button nativeButton={false} variant="outline" render={<Link to={href} />}>
             Ver detalle
           </Button>
@@ -34,20 +47,24 @@ export function OrderCard({
   );
 }
 
-export function OrderTimeline() {
+export function OrderTimeline({ steps }: { steps: TimelineStep[] }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Linea de tiempo</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {timeline.map((step, index) => (
-          <div key={step} className="flex gap-3">
+        {steps.map((step, index) => (
+          <div key={step.label} className="flex gap-3">
             <div className="flex flex-col items-center">
-              <div className="size-3 rounded-full bg-primary" />
-              {index < timeline.length - 1 ? <div className="h-8 w-px bg-border" /> : null}
+              <div
+                className={`size-3 rounded-full ${step.completado ? "bg-primary" : "bg-muted-foreground/30"}`}
+              />
+              {index < steps.length - 1 ? <div className="h-8 w-px bg-border" /> : null}
             </div>
-            <p className="text-sm">{step}</p>
+            <p className={`text-sm ${step.completado ? "" : "text-muted-foreground"}`}>
+              {step.label}
+            </p>
           </div>
         ))}
       </CardContent>
@@ -55,7 +72,15 @@ export function OrderTimeline() {
   );
 }
 
-export function OrderSummary() {
+export function OrderSummary({
+  subtotal,
+  costoEnvio,
+  total,
+}: {
+  subtotal: number;
+  costoEnvio: number;
+  total: number;
+}) {
   return (
     <Card>
       <CardHeader>
@@ -64,35 +89,35 @@ export function OrderSummary() {
       <CardContent className="space-y-3">
         <div className="flex justify-between text-sm">
           <span>Subtotal</span>
-          <span>S/ {order.subtotal.toFixed(2)}</span>
+          <span>S/ {(subtotal / 100).toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span>Envio</span>
-          <span>S/ {order.deliveryFee.toFixed(2)}</span>
+          <span>S/ {(costoEnvio / 100).toFixed(2)}</span>
         </div>
         <Separator />
         <div className="flex justify-between font-semibold">
           <span>Total</span>
-          <span>S/ {order.total.toFixed(2)}</span>
+          <span>S/ {(total / 100).toFixed(2)}</span>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-export function OrderItems() {
+export function OrderItems({ items }: { items: PedidoItem[] }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Productos</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {order.items.map(({ product, quantity }) => (
-          <div key={product.id} className="flex justify-between gap-3 text-sm">
+        {items.map((item, i) => (
+          <div key={i} className="flex justify-between gap-3 text-sm">
             <span>
-              {quantity}x {product.name}
+              {item.cantidad}x {item.productoNombre}
             </span>
-            <span>S/ {(product.price * quantity).toFixed(2)}</span>
+            <span>S/ {(item.subtotal / 100).toFixed(2)}</span>
           </div>
         ))}
       </CardContent>
@@ -100,12 +125,12 @@ export function OrderItems() {
   );
 }
 
-export function TrackingButton() {
+export function TrackingButton({ pedidoId }: { pedidoId: number }) {
   return (
     <Button
       nativeButton={false}
       className="w-full"
-      render={<Link to={`/cliente/pedidos/${order.id}/seguimiento`} />}
+      render={<Link to={`/cliente/pedidos/${pedidoId}/seguimiento`} />}
     >
       <MapPinned />
       Ver seguimiento

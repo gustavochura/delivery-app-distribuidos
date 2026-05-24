@@ -2,21 +2,18 @@ import { Link, useLocation } from "react-router";
 import { Home, Search, ShoppingCart } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
 
 export function SearchBar({
   placeholder = "Buscar",
   className,
-}: {
-  placeholder?: string;
-  className?: string;
-}) {
+  ...props
+}: React.ComponentProps<"input"> & { className?: string }) {
   return (
     <div className={cn("relative", className)}>
       <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-      <Input className="pl-9" placeholder={placeholder} />
+      <Input className="pl-9" placeholder={placeholder} {...props} />
     </div>
   );
 }
@@ -93,15 +90,7 @@ export function RoleShell({
       <section className="mx-auto w-full max-w-6xl">
         <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
-            <Button
-              nativeButton={false}
-              variant="link"
-              className="h-auto px-0"
-              render={<Link to="/dashboard" />}
-            >
-              Delivery App
-            </Button>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight">{title}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
             {description ? (
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                 {description}
@@ -119,7 +108,7 @@ export function RoleShell({
 export function MobileBottomNav({
   items,
 }: {
-  items: Array<{ href: string; label: string; icon?: React.ComponentType<{ className?: string }> }>;
+  items: Array<{ href: string; label: string; icon?: React.ComponentType<{ className?: string }>; badge?: number }>;
 }) {
   const location = useLocation();
 
@@ -138,7 +127,14 @@ export function MobileBottomNav({
               active && "bg-muted text-foreground",
             )}
           >
-            <Icon className="size-4" />
+            <div className="relative">
+              <Icon className="size-4" />
+              {item.badge && item.badge > 0 ? (
+                <span className="absolute -right-1.5 -top-1 flex size-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                  {item.badge > 9 ? "9+" : item.badge}
+                </span>
+              ) : null}
+            </div>
             {item.label}
           </Link>
         );

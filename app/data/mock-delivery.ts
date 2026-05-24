@@ -167,7 +167,7 @@ export const users = [
 ];
 
 export const dashboardRoles = [
-  { title: "Cliente", href: "/cliente/home", icon: ShoppingBag, description: "Explorar restaurantes, pedir y seguir entregas." },
+  { title: "Cliente", href: "/", icon: ShoppingBag, description: "Explorar restaurantes, pedir y seguir entregas." },
   { title: "Restaurante", href: "/restaurante/pedidos", icon: ChefHat, description: "Gestionar pedidos recibidos y menu." },
   { title: "Repartidor", href: "/repartidor/home", icon: Bike, description: "Tomar pedidos y navegar entregas." },
   { title: "Administrador", href: "/admin/dashboard", icon: Users, description: "Monitorear usuarios, pedidos y reportes." },
