@@ -1,5 +1,5 @@
 import { Link, Outlet, useLoaderData, useNavigate } from "react-router";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, ReceiptText, ShoppingCart } from "lucide-react";
 import { and, eq } from "drizzle-orm";
 import { signOut } from "~/lib/auth-client";
 import { requireCliente } from "~/lib/roles.server";
@@ -48,7 +48,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export default function ClienteLayout() {
-  const { nombre, availableRoles } = useLoaderData<typeof loader>();
+  const { nombre, availableRoles, carritoCount } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
 
   async function handleSignOut() {
@@ -70,6 +70,25 @@ export default function ClienteLayout() {
             Delivery App
           </Button>
           <div className="flex items-center gap-2">
+            <Button
+              nativeButton={false}
+              variant="ghost"
+              size="icon"
+              className="size-9"
+              render={<Link to="/cliente/pedidos" />}
+            >
+              <ReceiptText className="size-4" />
+            </Button>
+            <Link to="/cliente/carrito" className="relative">
+              <Button variant="ghost" size="icon" className="size-9">
+                <ShoppingCart className="size-4" />
+              </Button>
+              {carritoCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                  {carritoCount > 9 ? "9+" : carritoCount}
+                </span>
+              )}
+            </Link>
             {availableRoles.length > 1 && (
               <DropdownMenu>
                 <DropdownMenuTrigger
