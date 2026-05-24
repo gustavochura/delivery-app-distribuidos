@@ -1,39 +1,135 @@
-import { Link } from "react-router";
+import { Link, useFetcher, useLoaderData } from "react-router";
+import { and, count, eq, gte, inArray } from "drizzle-orm";
+import { DollarSign, PackageCheck } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { dailyStats, order } from "~/data/mock-delivery";
+import { db } from "~/database/client.server";
+import {
+  pedidosTable,
+  repartidoresTable,
+  restaurantesTable,
+  usuariosTable,
+} from "~/database/schema";
+import { requireRepartidor } from "~/lib/roles.server";
 import { RoleShell, StatsCard } from "~/components/delivery/common";
+import type { Route } from "./+types/repartidor.home";
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const { profiles } = await requireRepartidor(request);
+  const repartidorId = profiles.repartidor!.id;
+  const estado = profiles.repartidor!.estado;
+
+  const [usuario] = await db
+    .select({ nombre: usuariosTable.nombre })
+    .from(usuariosTable)
+    .where(eq(usuariosTable.id, profiles.usuario.id))
+    .limit(1);
+
+  // Count deliveries today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const [{ entregasHoy }] = await db
+    .select({ entregasHoy: count() })
+    .from(pedidosTable)
+    .where(
+      and(
+        eq(pedidosTable.repartidorId, repartidorId),
+        eq(pedidosTable.estado, "entregado"),
+        gte(pedidosTable.createdAt, today.toISOString()),
+      ),
+    );
+
+  // Active order assigned to this repartidor
+  const [pedidoActivo] = await db
+    .select({
+      id: pedidosTable.id,
+      estado: pedidosTable.estado,
+      restauranteNombre: restaurantesTable.nombre,
+    })
+    .from(pedidosTable)
+    .innerJoin(restaurantesTable, eq(restaurantesTable.id, pedidosTable.restauranteId))
+    .where(
+      and(
+        eq(pedidosTable.repartidorId, repartidorId),
+        inArray(pedidosTable.estado, ["repartidor_asignado", "recogido", "en_camino"]),
+      ),
+    )
+    .limit(1);
+
+  return { nombre: usuario?.nombre ?? "Repartidor", estado, entregasHoy, pedidoActivo: pedidoActivo ?? null };
+}
+
+export async function action({ request }: Route.ActionArgs) {
+  const { profiles } = await requireRepartidor(request);
+  const repartidorId = profiles.repartidor!.id;
+  const estadoActual = profiles.repartidor!.estado;
+
+  await db
+    .update(repartidoresTable)
+    .set({ estado: estadoActual === "disponible" ? "no_disponible" : "disponible" })
+    .where(eq(repartidoresTable.id, repartidorId));
+
+  return null;
+}
 
 export default function RepartidorHome() {
+  const { nombre, estado, entregasHoy, pedidoActivo } = useLoaderData<typeof loader>();
+  const fetcher = useFetcher();
+  const disponible = estado === "disponible";
+  const isToggling = fetcher.state !== "idle";
+
   return (
-    <RoleShell title="Hola, Renzo" description="Activa tu disponibilidad y toma pedidos asignados.">
+    <RoleShell
+      title={`Hola, ${nombre.split(" ")[0]}`}
+      description="Activa tu disponibilidad y toma pedidos asignados."
+    >
       <div className="space-y-5">
         <Card>
           <CardContent className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="font-medium">Estado actual</p>
-              <p className="text-sm text-muted-foreground">Disponible para recibir pedidos</p>
+              <p className="text-sm text-muted-foreground">
+                {disponible ? "Disponible para recibir pedidos" : "No disponible"}
+              </p>
             </div>
-            <Button>Disponible</Button>
+            <fetcher.Form method="post">
+              <Button type="submit" variant={disponible ? "default" : "outline"} disabled={isToggling}>
+                {disponible ? "Disponible" : "No disponible"}
+              </Button>
+            </fetcher.Form>
           </CardContent>
         </Card>
-        <div className="grid gap-4 md:grid-cols-3">
-          {dailyStats.map((stat) => (
-            <StatsCard key={stat.label} {...stat} />
-          ))}
+        <div className="grid gap-4 md:grid-cols-2">
+          <StatsCard label="Entregas hoy" value={String(entregasHoy)} icon={PackageCheck} />
+          <StatsCard label="Ganancia" value="S/ --" icon={DollarSign} />
         </div>
-        <Card>
-          <CardHeader><CardTitle>Pedido actual</CardTitle></CardHeader>
-          <CardContent className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="font-medium">Pedido #{order.id}</p>
-              <p className="text-sm text-muted-foreground">{order.restaurant.name} hacia {order.address}</p>
-            </div>
-            <Button nativeButton={false} render={<Link to="/repartidor/pedidos/asignado" />}>
-              Ver asignado
-            </Button>
-          </CardContent>
-        </Card>
+        {pedidoActivo && (
+          <Card>
+            <CardHeader><CardTitle>Pedido actual</CardTitle></CardHeader>
+            <CardContent className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="font-medium">Pedido #{pedidoActivo.id}</p>
+                <p className="text-sm text-muted-foreground">{pedidoActivo.restauranteNombre}</p>
+              </div>
+              <Button nativeButton={false} render={<Link to={`/repartidor/pedidos/${pedidoActivo.id}/mapa`} />}>
+                Ver mapa
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+        {!pedidoActivo && disponible && (
+          <Card>
+            <CardContent className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="font-medium">Sin pedido asignado</p>
+                <p className="text-sm text-muted-foreground">Esperando pedidos disponibles</p>
+              </div>
+              <Button nativeButton={false} render={<Link to="/repartidor/pedidos/asignado" />}>
+                Ver disponibles
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </RoleShell>
   );
