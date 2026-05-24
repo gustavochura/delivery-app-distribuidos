@@ -23,9 +23,24 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+export function meta() {
+  return [
+    { title: "Delivery App" },
+    { name: "description", content: "Pide comida de tus restaurantes favoritos y recíbela en la puerta de tu casa." },
+    { name: "application-name", content: "Delivery App" },
+    { property: "og:title", content: "Delivery App" },
+    { property: "og:description", content: "Pide comida de tus restaurantes favoritos y recíbela en la puerta de tu casa." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
+    { name: "twitter:title", content: "Delivery App" },
+    { name: "twitter:description", content: "Pide comida de tus restaurantes favoritos y recíbela en la puerta de tu casa." },
+    { name: "theme-color", content: "#ffffff" },
+  ];
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
