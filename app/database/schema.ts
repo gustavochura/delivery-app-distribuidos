@@ -111,6 +111,7 @@ export const usuariosTable = sqliteTable("usuarios", {
   nombre: text("nombre").notNull(),
   email: text("email").notNull().unique(),
   telefono: text("telefono"),
+  isAdmin: integer("is_admin", { mode: "boolean" }).default(false).notNull(),
   ...timestamps,
 });
 
@@ -137,8 +138,14 @@ export const restaurantesTable = sqliteTable("restaurantes", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   nombre: text("nombre").notNull(),
   descripcion: text("descripcion"),
+  categoria: text("categoria"),
   telefono: text("telefono"),
   direccion: text("direccion").notNull(),
+  imagen: text("imagen"),
+  calificacion: real("calificacion").default(5.0).notNull(),
+  tiempoEstimado: text("tiempo_estimado").default("30-40 min").notNull(),
+  tarifaEnvio: integer("tarifa_envio").default(0).notNull(),
+  abierto: integer("abierto", { mode: "boolean" }).default(true).notNull(),
   activo: integer("activo", { mode: "boolean" }).default(true).notNull(),
   ...timestamps,
 });
@@ -171,6 +178,8 @@ export const productosTable = sqliteTable("productos", {
     .references(() => restaurantesTable.id, { onDelete: "cascade" }),
   nombre: text("nombre").notNull(),
   descripcion: text("descripcion"),
+  categoria: text("categoria"),
+  imagen: text("imagen"),
   precio: integer("precio").notNull(),
   disponible: integer("disponible", { mode: "boolean" }).default(true).notNull(),
   ...timestamps,

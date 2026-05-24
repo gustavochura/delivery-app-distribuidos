@@ -22,6 +22,20 @@
       "when": 1779501708805,
       "tag": "0002_tan_mongu",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1779549569875,
+      "tag": "0003_daffy_quicksilver",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1779553266570,
+      "tag": "0004_wonderful_nebula",
+      "breakpoints": true
     }
   ]
 }
