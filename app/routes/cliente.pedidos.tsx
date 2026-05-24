@@ -46,22 +46,22 @@ export default function ClientePedidos() {
   ];
 
   return (
-    <RoleShell title="Mis pedidos">
+    <RoleShell title="Mis pedidos" description={`${pedidos.length} pedido${pedidos.length !== 1 ? "s" : ""} en total`}>
       {pedidos.length === 0 ? (
         <EmptyState
           title="Aun no tienes pedidos"
           description="Explora los restaurantes y haz tu primer pedido."
         />
       ) : (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-4 pb-20">
           {pedidos.map((pedido) => (
-            <Link key={pedido.id} to={`/cliente/pedidos/${pedido.id}`}>
+            <Link key={pedido.id} to={`/cliente/pedidos/${pedido.id}`} className="block">
               <Card className="transition-colors hover:bg-muted/50">
-                <CardContent className="flex items-center justify-between gap-4 py-4">
+                <CardContent className="flex items-center justify-between gap-4 py-5">
                   <div className="min-w-0">
                     <p className="font-medium">{pedido.restauranteNombre}</p>
-                    <p className="mt-0.5 text-sm text-muted-foreground">
-                      Pedido #{pedido.id} · {pedido.createdAt}
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Pedido #{pedido.id} · {new Date(pedido.createdAt).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })}
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
