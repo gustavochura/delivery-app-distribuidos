@@ -17,7 +17,7 @@ export function AddressPickerMap({
   defaultLat?: number;
   defaultLng?: number;
 }) {
-  const [marker, setMarker] = useState({ lat: defaultLat, lng: defaultLng });
+  const [marker, setMarker] = useState<{ lat: number; lng: number } | null>(null);
 
   if (!token) {
     return (
@@ -53,18 +53,20 @@ export function AddressPickerMap({
           onClick={handleClick}
           cursor="crosshair"
         >
-          <Marker
-            latitude={marker.lat}
-            longitude={marker.lng}
-            draggable
-            onDragEnd={handleDragEnd}
-          >
-            <div className="flex -translate-y-2 flex-col items-center">
-              <div className="rounded-full bg-primary p-1.5 text-primary-foreground shadow-md">
-                <MapPin className="size-4" />
+          {marker && (
+            <Marker
+              latitude={marker.lat}
+              longitude={marker.lng}
+              draggable
+              onDragEnd={handleDragEnd}
+            >
+              <div className="flex -translate-y-2 flex-col items-center">
+                <div className="rounded-full bg-primary p-1.5 text-primary-foreground shadow-md">
+                  <MapPin className="size-4" />
+                </div>
               </div>
-            </div>
-          </Marker>
+            </Marker>
+          )}
         </Map>
       </div>
     </div>
