@@ -78,6 +78,14 @@ export async function action({ request }: Route.ActionArgs) {
   const metodo = (formData.get("metodo") as string) ?? "efectivo";
   const notas = (formData.get("notas") as string) || null;
 
+  const [direccion] = await db
+    .select({ id: direccionesTable.id })
+    .from(direccionesTable)
+    .where(and(eq(direccionesTable.id, direccionId), eq(direccionesTable.clienteId, clienteId)))
+    .limit(1);
+
+  if (!direccion) throw redirect("/cliente/checkout");
+
   const carritos = await db
     .select()
     .from(carritosTable)
