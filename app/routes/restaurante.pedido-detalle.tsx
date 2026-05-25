@@ -74,12 +74,19 @@ export async function action({ request, params }: Route.ActionArgs) {
   const nuevoEstado = formData.get("estado") as string;
 
   const [pedido] = await db
-    .select({ restauranteId: pedidosTable.restauranteId })
+    .select({ restauranteId: pedidosTable.restauranteId, estado: pedidosTable.estado })
     .from(pedidosTable)
     .where(eq(pedidosTable.id, pedidoId))
     .limit(1);
 
   if (!pedido || pedido.restauranteId !== restauranteId) throw redirect("/restaurante/pedidos");
+
+  const TRANSICIONES_VALIDAS: Record<string, string[]> = {
+    pendiente: ["aceptado", "rechazado"],
+    aceptado: ["en_preparacion"],
+    en_preparacion: ["listo"],
+  };
+  if (!TRANSICIONES_VALIDAS[pedido.estado]?.includes(nuevoEstado)) return null;
 
   await db
     .update(pedidosTable)

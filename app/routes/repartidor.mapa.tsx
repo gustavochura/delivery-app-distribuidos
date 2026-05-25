@@ -68,12 +68,19 @@ export async function action({ request, params }: Route.ActionArgs) {
   const nuevoEstado = formData.get("estado") as string;
 
   const [pedido] = await db
-    .select({ repartidorId: pedidosTable.repartidorId })
+    .select({ repartidorId: pedidosTable.repartidorId, estado: pedidosTable.estado })
     .from(pedidosTable)
     .where(eq(pedidosTable.id, pedidoId))
     .limit(1);
 
   if (!pedido || pedido.repartidorId !== repartidorId) return null;
+
+  const NEXT_STATE_VALID: Record<string, string> = {
+    repartidor_asignado: "recogido",
+    recogido: "en_camino",
+    en_camino: "entregado",
+  };
+  if (NEXT_STATE_VALID[pedido.estado] !== nuevoEstado) return null;
 
   await db
     .update(pedidosTable)
