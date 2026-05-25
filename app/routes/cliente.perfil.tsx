@@ -199,18 +199,23 @@ export default function ClientePerfil() {
                     )}
                   </div>
                   <div className="flex shrink-0 gap-1">
-                    {!dir.principal && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        title="Marcar como principal"
-                        onClick={() => markPrincipal(dir.id)}
-                      >
-                        <Star className="size-3.5" />
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8"
+                      title={dir.principal ? "Dirección principal" : "Marcar como principal"}
+                      disabled={dir.principal}
+                      onClick={() => markPrincipal(dir.id)}
+                    >
+                      <Star
+                        className="size-3.5"
+                        fill={dir.principal ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        strokeWidth={dir.principal ? 0 : 1.5}
+                        color={dir.principal ? "var(--primary)" : undefined}
+                      />
+                    </Button>
                     <Button
                       type="button"
                       variant="ghost"
