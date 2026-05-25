@@ -1,4 +1,4 @@
-import { redirect, useFetcher, useLoaderData } from "react-router";
+import { Form, redirect, useLoaderData, useNavigation } from "react-router";
 import { eq, inArray } from "drizzle-orm";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -84,8 +84,8 @@ export async function action({ request }: Route.ActionArgs) {
 
 export default function RepartidorPedidoAsignado() {
   const { pedidos } = useLoaderData<typeof loader>();
-  const fetcher = useFetcher();
-  const isSubmitting = fetcher.state === "submitting";
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === "submitting";
 
   if (pedidos.length === 0) {
     return (
@@ -113,13 +113,13 @@ export default function RepartidorPedidoAsignado() {
                 <p className="text-sm">{pedido.direccion}</p>
               </div>
               <div className="md:col-span-2 flex flex-wrap gap-3">
-                <fetcher.Form method="post">
+                <Form method="post">
                   <input type="hidden" name="intent" value="accept" />
                   <input type="hidden" name="pedido_id" value={pedido.id} />
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting ? "Aceptando…" : "Aceptar pedido"}
                   </Button>
-                </fetcher.Form>
+                </Form>
                 <Button variant="outline" disabled>Rechazar</Button>
               </div>
             </CardContent>

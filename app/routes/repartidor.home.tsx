@@ -1,5 +1,5 @@
 import { Link, useFetcher, useLoaderData } from "react-router";
-import { and, count, eq, gte, inArray } from "drizzle-orm";
+import { and, count, eq, gte, inArray, sum } from "drizzle-orm";
 import { DollarSign, PackageCheck } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -8,6 +8,7 @@ import {
   pedidosTable,
   repartidoresTable,
   restaurantesTable,
+  seguimientoPedidosTable,
   usuariosTable,
 } from "~/database/schema";
 import { requireRepartidor } from "~/lib/roles.server";
@@ -25,17 +26,16 @@ export async function loader({ request }: Route.LoaderArgs) {
     .where(eq(usuariosTable.id, profiles.usuario.id))
     .limit(1);
 
-  // Count deliveries today
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const [{ entregasHoy }] = await db
-    .select({ entregasHoy: count() })
-    .from(pedidosTable)
+  const todayStr = new Date().toISOString().slice(0, 10) + " 00:00:00";
+  const [stats] = await db
+    .select({ entregasHoy: count(), gananciaHoy: sum(pedidosTable.costoEnvio) })
+    .from(seguimientoPedidosTable)
+    .innerJoin(pedidosTable, eq(pedidosTable.id, seguimientoPedidosTable.pedidoId))
     .where(
       and(
         eq(pedidosTable.repartidorId, repartidorId),
-        eq(pedidosTable.estado, "entregado"),
-        gte(pedidosTable.createdAt, today.toISOString()),
+        eq(seguimientoPedidosTable.estado, "entregado"),
+        gte(seguimientoPedidosTable.createdAt, todayStr),
       ),
     );
 
@@ -56,7 +56,13 @@ export async function loader({ request }: Route.LoaderArgs) {
     )
     .limit(1);
 
-  return { nombre: usuario?.nombre ?? "Repartidor", estado, entregasHoy, pedidoActivo: pedidoActivo ?? null };
+  return {
+    nombre: usuario?.nombre ?? "Repartidor",
+    estado,
+    entregasHoy: stats?.entregasHoy ?? 0,
+    gananciaHoy: stats?.gananciaHoy ?? 0,
+    pedidoActivo: pedidoActivo ?? null,
+  };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -73,7 +79,7 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function RepartidorHome() {
-  const { nombre, estado, entregasHoy, pedidoActivo } = useLoaderData<typeof loader>();
+  const { nombre, estado, entregasHoy, gananciaHoy, pedidoActivo } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const disponible = estado === "disponible";
   const isToggling = fetcher.state !== "idle";
@@ -101,7 +107,7 @@ export default function RepartidorHome() {
         </Card>
         <div className="grid gap-4 md:grid-cols-2">
           <StatsCard label="Entregas hoy" value={String(entregasHoy)} icon={PackageCheck} />
-          <StatsCard label="Ganancia" value="S/ --" icon={DollarSign} />
+          <StatsCard label="Ganancia hoy" value={`S/ ${((gananciaHoy ?? 0) / 100).toFixed(2)}`} icon={DollarSign} />
         </div>
         {pedidoActivo && (
           <Card>
