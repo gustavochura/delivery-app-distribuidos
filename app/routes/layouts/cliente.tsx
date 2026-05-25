@@ -114,9 +114,12 @@ export default function ClienteLayout() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            <span className="hidden text-sm text-muted-foreground sm:block">
+            <Link
+              to="/cliente/perfil"
+              className="hidden text-sm text-muted-foreground hover:text-foreground transition-colors sm:block"
+            >
               {nombre}
-            </span>
+            </Link>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               Salir
             </Button>

@@ -20,6 +20,7 @@ export default [
     route("cliente/pedidos", "routes/cliente.pedidos.tsx"),
     route("cliente/pedidos/:pedido_id", "routes/cliente.pedido-detalle.tsx"),
     route("cliente/pedidos/:pedido_id/seguimiento", "routes/cliente.seguimiento.tsx"),
+    route("cliente/perfil", "routes/cliente.perfil.tsx"),
   ]),
 
   route("restaurante/cambiar", "routes/restaurante.cambiar.tsx"),
