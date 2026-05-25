@@ -142,7 +142,7 @@ export default function SignUp() {
         <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-300">
           Ya tienes cuenta?{" "}
           <Link className="font-medium text-primary hover:underline" to="/sign-in">
-            Inicia sesion
+            Inicia sesión
           </Link>
         </p>
       </section>

@@ -144,7 +144,7 @@ export default function ClienteBrowsingLayout() {
                   size="sm"
                   render={<Link to="/sign-in" />}
                 >
-                  Iniciar sesion
+                  Iniciar sesión
                 </Button>
                 <Button
                   nativeButton={false}

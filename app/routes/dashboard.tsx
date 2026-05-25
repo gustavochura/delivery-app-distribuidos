@@ -102,7 +102,7 @@ export default function Dashboard() {
                 <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} variant="destructive">
-                  Cerrar sesion
+                  Cerrar sesión
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>

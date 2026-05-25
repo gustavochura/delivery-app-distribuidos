@@ -49,7 +49,7 @@ export default function ClientePedidos() {
     <RoleShell title="Mis pedidos" description={`${pedidos.length} pedido${pedidos.length !== 1 ? "s" : ""} en total`}>
       {pedidos.length === 0 ? (
         <EmptyState
-          title="Aun no tienes pedidos"
+          title="Aún no tienes pedidos"
           description="Explora los restaurantes y haz tu primer pedido."
         />
       ) : (

@@ -23,7 +23,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export function meta() {
   return [
-    { title: "Iniciar sesion | Delivery App" },
+    { title: "Iniciar sesión | Delivery App" },
     { name: "description", content: "Accede a tu cuenta de Delivery App." },
   ];
 }
@@ -50,7 +50,7 @@ export default function SignIn() {
       );
 
       if (result?.error) {
-        setError(result.error.message ?? "No se pudo iniciar sesion.");
+        setError(result.error.message ?? "No se pudo iniciar sesión.");
       }
     } catch (error) {
       setError(
@@ -75,7 +75,7 @@ export default function SignIn() {
           >
             Delivery App
           </Button>
-          <h1 className="mt-6 text-3xl font-semibold">Iniciar sesion</h1>
+          <h1 className="mt-6 text-3xl font-semibold">Iniciar sesión</h1>
         </div>
 
         <Card>
@@ -113,7 +113,7 @@ export default function SignIn() {
 
               {error ? (
                 <Alert variant="destructive">
-                  <AlertTitle>No se pudo iniciar sesion</AlertTitle>
+                  <AlertTitle>No se pudo iniciar sesión</AlertTitle>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               ) : null}
