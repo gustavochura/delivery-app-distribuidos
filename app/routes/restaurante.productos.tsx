@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useFetcher, useLoaderData } from "react-router";
 import { eq } from "drizzle-orm";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { db } from "~/database/client.server";
 import { productosTable } from "~/database/schema";
@@ -96,7 +96,20 @@ export default function RestauranteProductos() {
             <ProductAdminCard
               key={producto.id}
               product={producto}
-              actions={<ToggleDisponibleButton producto={producto} />}
+              actions={
+                <>
+                  <Button
+                    nativeButton={false}
+                    variant="ghost"
+                    size="sm"
+                    render={<Link to={`/restaurante/productos/${producto.id}`} />}
+                  >
+                    <Pencil className="size-3.5" />
+                    Editar
+                  </Button>
+                  <ToggleDisponibleButton producto={producto} />
+                </>
+              }
             />
           ))}
         </div>
