@@ -184,6 +184,9 @@ export default function RepartidorHome() {
           <StatsCard label="Completadas hoy" value={String(entregasHoy)} icon={PackageCheck} />
           <StatsCard label="Ganancia hoy" value={`S/ ${(gananciaHoy / 100).toFixed(2)}`} icon={DollarSign} />
         </div>
+        <p className="text-xs text-muted-foreground">
+          Tarifa fija: S/ {(TARIFA_REPARTIDOR / 100).toFixed(2)} por entrega completada
+        </p>
 
         {pedidoActivo && (
           <Card>
@@ -219,7 +222,10 @@ export default function RepartidorHome() {
                     <p className="text-muted-foreground">{pedido.direccion}</p>
                   </div>
                   <div className="md:col-span-2 flex items-center justify-between">
-                    <p className="text-sm font-semibold">S/ {(pedido.total / 100).toFixed(2)}</p>
+                    <div>
+                      <p className="text-sm font-semibold">S/ {(pedido.total / 100).toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">Tu ganancia: S/ {(TARIFA_REPARTIDOR / 100).toFixed(2)}</p>
+                    </div>
                     <Form method="post">
                       <input type="hidden" name="intent" value="accept" />
                       <input type="hidden" name="pedido_id" value={pedido.id} />
