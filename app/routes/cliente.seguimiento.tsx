@@ -98,7 +98,9 @@ export default function ClienteSeguimiento() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Tu repartidor esta camino a la direccion de entrega.
+              {repartidor
+                ? "Tu repartidor esta camino a la dirección de entrega."
+                : "Esperando que un repartidor tome el pedido."}
             </p>
             {repartidor && (
               <div className="rounded-lg border p-3">

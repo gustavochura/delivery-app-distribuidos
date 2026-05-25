@@ -4,7 +4,6 @@ import { db } from "~/database/client.server";
 import {
   clientesTable,
   pedidosTable,
-  repartidoresTable,
   restaurantesTable,
   usuariosTable,
 } from "~/database/schema";
@@ -15,9 +14,6 @@ import type { Route } from "./+types/admin.pedidos";
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
 
-  const clienteUsuario = usuariosTable;
-  const repartidorAlias = repartidoresTable;
-
   const pedidos = await db
     .select({
       id: pedidosTable.id,
@@ -25,12 +21,12 @@ export async function loader({ request }: Route.LoaderArgs) {
       total: pedidosTable.total,
       createdAt: pedidosTable.createdAt,
       restauranteNombre: restaurantesTable.nombre,
-      clienteNombre: clienteUsuario.nombre,
+      clienteNombre: usuariosTable.nombre,
     })
     .from(pedidosTable)
     .innerJoin(restaurantesTable, eq(restaurantesTable.id, pedidosTable.restauranteId))
     .innerJoin(clientesTable, eq(clientesTable.id, pedidosTable.clienteId))
-    .innerJoin(clienteUsuario, eq(clienteUsuario.id, clientesTable.usuarioId))
+    .innerJoin(usuariosTable, eq(usuariosTable.id, clientesTable.usuarioId))
     .orderBy(desc(pedidosTable.createdAt))
     .limit(50);
 

@@ -15,28 +15,31 @@ import type { Route } from "./+types/admin.usuarios";
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
 
-  const rows = await db
-    .select({
-      id: usuariosTable.id,
-      nombre: usuariosTable.nombre,
-      email: usuariosTable.email,
-      isAdmin: usuariosTable.isAdmin,
-      clienteId: clientesTable.id,
-      repartidorId: repartidoresTable.id,
-      restauranteAdminId: restauranteAdminsTable.id,
-    })
-    .from(usuariosTable)
-    .leftJoin(clientesTable, eq(clientesTable.usuarioId, usuariosTable.id))
-    .leftJoin(repartidoresTable, eq(repartidoresTable.usuarioId, usuariosTable.id))
-    .leftJoin(restauranteAdminsTable, eq(restauranteAdminsTable.usuarioId, usuariosTable.id))
-    .limit(100);
+  const [rows, restauranteAdminIds] = await Promise.all([
+    db
+      .select({
+        id: usuariosTable.id,
+        nombre: usuariosTable.nombre,
+        email: usuariosTable.email,
+        isAdmin: usuariosTable.isAdmin,
+        clienteId: clientesTable.id,
+        repartidorId: repartidoresTable.id,
+      })
+      .from(usuariosTable)
+      .leftJoin(clientesTable, eq(clientesTable.usuarioId, usuariosTable.id))
+      .leftJoin(repartidoresTable, eq(repartidoresTable.usuarioId, usuariosTable.id))
+      .limit(100),
+    db.selectDistinct({ usuarioId: restauranteAdminsTable.usuarioId }).from(restauranteAdminsTable),
+  ]);
+
+  const adminSet = new Set(restauranteAdminIds.map((r) => r.usuarioId));
 
   const usuarios = rows.map((r) => {
     const roles: string[] = [];
     if (r.isAdmin) roles.push("admin");
     if (r.clienteId) roles.push("cliente");
     if (r.repartidorId) roles.push("repartidor");
-    if (r.restauranteAdminId) roles.push("restaurante");
+    if (adminSet.has(r.id)) roles.push("restaurante");
     return { id: r.id, nombre: r.nombre, email: r.email, roles };
   });
 

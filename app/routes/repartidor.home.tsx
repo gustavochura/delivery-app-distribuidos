@@ -179,7 +179,7 @@ export default function RepartidorHome() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <StatsCard label="Entregas hoy" value={String(entregasHoy)} icon={PackageCheck} />
-          <StatsCard label="Ganancia hoy" value={`S/ ${((gananciaHoy ?? 0) / 100).toFixed(2)}`} icon={DollarSign} />
+          <StatsCard label="Ganancia hoy" value={`S/ ${((Number(gananciaHoy) || 0) / 100).toFixed(2)}`} icon={DollarSign} />
         </div>
 
         {pedidoActivo && (

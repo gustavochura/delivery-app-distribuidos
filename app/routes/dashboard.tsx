@@ -42,6 +42,16 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (profiles?.repartidor) availableRoles.push("repartidor");
   if (profiles?.usuario.isAdmin) availableRoles.push("admin");
 
+  if (availableRoles.length === 1) {
+    const destinos: Record<string, string> = {
+      cliente: "/",
+      restaurante: "/restaurante/pedidos",
+      repartidor: "/repartidor/home",
+      admin: "/admin/dashboard",
+    };
+    throw redirect(destinos[availableRoles[0]] ?? "/");
+  }
+
   return {
     user: session.user,
     availableRoles,

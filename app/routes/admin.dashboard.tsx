@@ -16,8 +16,7 @@ import type { Route } from "./+types/admin.dashboard";
 export async function loader({ request }: Route.LoaderArgs) {
   await requireAdmin(request);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayStr = new Date().toISOString().slice(0, 10) + " 00:00:00";
 
   const [
     [{ totalUsuarios }],
@@ -34,7 +33,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       .from(pedidosTable)
       .where(
         and(
-          gte(pedidosTable.createdAt, today.toISOString()),
+          gte(pedidosTable.createdAt, todayStr),
           inArray(pedidosTable.estado, [
             "pendiente", "aceptado", "en_preparacion", "listo",
             "repartidor_asignado", "recogido", "en_camino",
