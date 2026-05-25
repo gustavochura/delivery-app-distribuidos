@@ -1,5 +1,5 @@
 import { Form, Link, redirect, useFetcher, useLoaderData, useNavigation } from "react-router";
-import { and, count, eq, gte, inArray, sum } from "drizzle-orm";
+import { and, count, eq, gte, inArray } from "drizzle-orm";
 import { DollarSign, PackageCheck } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -17,6 +17,8 @@ import { requireRepartidor } from "~/lib/roles.server";
 import { RoleShell, StatsCard } from "~/components/delivery/common";
 import type { Route } from "./+types/repartidor.home";
 
+const TARIFA_REPARTIDOR = 300; // S/ 3.00 por entrega completada
+
 export async function loader({ request }: Route.LoaderArgs) {
   const { profiles } = await requireRepartidor(request);
   const repartidorId = profiles.repartidor!.id;
@@ -30,7 +32,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const todayStr = new Date().toISOString().slice(0, 10) + " 00:00:00";
   const [stats] = await db
-    .select({ entregasHoy: count(), gananciaHoy: sum(pedidosTable.costoEnvio) })
+    .select({ entregasHoy: count() })
     .from(seguimientoPedidosTable)
     .innerJoin(pedidosTable, eq(pedidosTable.id, seguimientoPedidosTable.pedidoId))
     .where(
@@ -85,11 +87,12 @@ export async function loader({ request }: Route.LoaderArgs) {
       .limit(5);
   }
 
+  const entregasHoy = stats?.entregasHoy ?? 0;
   return {
     nombre: usuario?.nombre ?? "Repartidor",
     estado,
-    entregasHoy: stats?.entregasHoy ?? 0,
-    gananciaHoy: stats?.gananciaHoy ?? 0,
+    entregasHoy,
+    gananciaHoy: entregasHoy * TARIFA_REPARTIDOR,
     pedidoActivo: pedidoActivo ?? null,
     pedidosDisponibles,
   };
@@ -179,7 +182,7 @@ export default function RepartidorHome() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <StatsCard label="Completadas hoy" value={String(entregasHoy)} icon={PackageCheck} />
-          <StatsCard label="Ganancia hoy" value={`S/ ${((Number(gananciaHoy) || 0) / 100).toFixed(2)}`} icon={DollarSign} />
+          <StatsCard label="Ganancia hoy" value={`S/ ${(gananciaHoy / 100).toFixed(2)}`} icon={DollarSign} />
         </div>
 
         {pedidoActivo && (
