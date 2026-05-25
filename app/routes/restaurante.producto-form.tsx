@@ -34,12 +34,14 @@ export async function action({ request, params }: Route.ActionArgs) {
   const { activeRestauranteId: restauranteId } = await requireRestauranteActive(request);
   const formData = await request.formData();
 
-  const nombre = formData.get("nombre") as string;
+  const nombre = (formData.get("nombre") as string).trim();
   const descripcion = (formData.get("descripcion") as string) || null;
   const categoria = (formData.get("categoria") as string) || null;
   const imagen = (formData.get("imagen") as string) || null;
   const precio = Math.round(Number(formData.get("precio")) * 100);
   const disponible = formData.get("disponible") === "on";
+
+  if (!nombre || isNaN(precio) || precio <= 0) return null;
 
   const esNuevo = params.producto_id === "nuevo";
   const productoId = esNuevo ? null : Number(params.producto_id);
