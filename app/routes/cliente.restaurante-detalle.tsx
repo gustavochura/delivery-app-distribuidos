@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link, redirect, useFetcher, useLoaderData, useRouteLoaderData } from "react-router";
 import { and, eq } from "drizzle-orm";
 import { Check, Home, Plus, ReceiptText, ShoppingCart, Star, User } from "lucide-react";
 import { Badge } from "~/components/ui/badge";
+import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { db } from "~/database/client.server";
@@ -70,7 +71,11 @@ export async function action({ request, params }: Route.ActionArgs) {
   const [producto] = await db
     .select()
     .from(productosTable)
-    .where(and(eq(productosTable.id, productoId), eq(productosTable.disponible, true)))
+    .where(and(
+      eq(productosTable.id, productoId),
+      eq(productosTable.restauranteId, restauranteId),
+      eq(productosTable.disponible, true),
+    ))
     .limit(1);
 
   if (!producto) return null;
@@ -195,6 +200,11 @@ export default function ClienteRestauranteDetalle() {
     ...(availableRoles.length > 1 ? [{ href: "/dashboard", label: "Roles", icon: User }] : []),
   ];
   const categorias = Array.from(new Set(productos.map((p) => p.categoria).filter(Boolean)));
+  const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
+  const productosFiltrados = useMemo(
+    () => categoriaActiva ? productos.filter((p) => p.categoria === categoriaActiva) : productos,
+    [productos, categoriaActiva],
+  );
 
   return (
     <RoleShell title={restaurante.nombre} description={restaurante.direccion}>
@@ -224,15 +234,26 @@ export default function ClienteRestauranteDetalle() {
             </div>
           </CardContent>
         </Card>
-        <div className="flex gap-2 overflow-x-auto">
-          {categorias.map((cat) => (
-            <Badge key={cat} variant="secondary" className="h-8 px-3">
-              {cat}
-            </Badge>
-          ))}
-        </div>
+        {categorias.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto">
+            {categorias.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategoriaActiva(cat === categoriaActiva ? null : cat)}
+                className={cn(
+                  "shrink-0 rounded-full border px-3 py-1 text-sm transition-colors",
+                  cat === categoriaActiva
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "hover:bg-muted",
+                )}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="grid gap-3 lg:grid-cols-2">
-          {productos.map((producto) => (
+          {productosFiltrados.map((producto) => (
             <ProductCardWithAdd key={producto.id} product={producto} />
           ))}
         </div>
