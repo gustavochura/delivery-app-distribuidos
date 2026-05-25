@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Form, redirect, useLoaderData, useNavigation } from "react-router";
 import { and, eq } from "drizzle-orm";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Label } from "~/components/ui/label";
+import { Switch } from "~/components/ui/switch";
 import { db } from "~/database/client.server";
 import { productosTable } from "~/database/schema";
 import { requireRestauranteActive } from "~/lib/roles.server";
@@ -80,6 +82,7 @@ export default function RestauranteProductoForm() {
   const esEdicion = !!producto;
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+  const [disponible, setDisponible] = useState(producto?.disponible ?? true);
 
   return (
     <RoleShell
@@ -141,22 +144,15 @@ export default function RestauranteProductoForm() {
                 className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
-            <div className="flex items-center gap-3 rounded-lg border px-4 py-3">
-              <input
-                name="disponible"
-                type="checkbox"
-                defaultChecked={producto?.disponible ?? true}
-                id="disponible"
-                className="h-4 w-4 cursor-pointer accent-primary"
-              />
+            <div className="flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
               <div>
-                <Label htmlFor="disponible" className="cursor-pointer font-medium">
-                  Disponible
-                </Label>
+                <Label className="font-medium">Disponible</Label>
                 <p className="text-xs text-muted-foreground">
                   El producto aparece en el menú del restaurante
                 </p>
               </div>
+              <input type="hidden" name="disponible" value={disponible ? "on" : ""} />
+              <Switch checked={disponible} onCheckedChange={setDisponible} />
             </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={isSubmitting}>
