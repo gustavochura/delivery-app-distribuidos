@@ -8,6 +8,7 @@ import {
   direccionesTable,
   pedidoDetallesTable,
   pedidosTable,
+  repartidoresTable,
   seguimientoPedidosTable,
   usuariosTable,
 } from "~/database/schema";
@@ -64,23 +65,61 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     .where(eq(direccionesTable.id, pedido.direccionId))
     .limit(1);
 
-  return { pedido, detalles, clienteNombre: cliente?.nombre ?? "Cliente", direccion };
+  let repartidoresDisponibles: { id: number; nombre: string }[] = [];
+  if (pedido.estado === "listo" && !pedido.repartidorId) {
+    repartidoresDisponibles = await db
+      .select({ id: repartidoresTable.id, nombre: usuariosTable.nombre })
+      .from(repartidoresTable)
+      .innerJoin(usuariosTable, eq(usuariosTable.id, repartidoresTable.usuarioId))
+      .where(eq(repartidoresTable.estado, "disponible"));
+  }
+
+  return { pedido, detalles, clienteNombre: cliente?.nombre ?? "Cliente", direccion, repartidoresDisponibles };
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
   const { activeRestauranteId: restauranteId } = await requireRestauranteActive(request);
   const pedidoId = Number(params.pedido_id);
   const formData = await request.formData();
-  const nuevoEstado = formData.get("estado") as string;
+  const intent = formData.get("intent");
 
   const [pedido] = await db
-    .select({ restauranteId: pedidosTable.restauranteId, estado: pedidosTable.estado })
+    .select({ restauranteId: pedidosTable.restauranteId, estado: pedidosTable.estado, repartidorId: pedidosTable.repartidorId })
     .from(pedidosTable)
     .where(eq(pedidosTable.id, pedidoId))
     .limit(1);
 
   if (!pedido || pedido.restauranteId !== restauranteId) throw redirect("/restaurante/pedidos");
 
+  if (intent === "asignar-repartidor") {
+    const repartidorId = Number(formData.get("repartidor_id"));
+    if (pedido.estado !== "listo" || pedido.repartidorId) return null;
+
+    const [repartidor] = await db
+      .select({ id: repartidoresTable.id, estado: repartidoresTable.estado })
+      .from(repartidoresTable)
+      .where(eq(repartidoresTable.id, repartidorId))
+      .limit(1);
+    if (!repartidor || repartidor.estado !== "disponible") return null;
+
+    await db.update(pedidosTable)
+      .set({ repartidorId, estado: "repartidor_asignado" })
+      .where(eq(pedidosTable.id, pedidoId));
+
+    await db.insert(seguimientoPedidosTable).values({
+      pedidoId,
+      estado: "repartidor_asignado",
+      descripcion: "Repartidor asignado por el restaurante",
+    });
+
+    await db.update(repartidoresTable)
+      .set({ estado: "ocupado" })
+      .where(eq(repartidoresTable.id, repartidorId));
+
+    return null;
+  }
+
+  const nuevoEstado = formData.get("estado") as string;
   const TRANSICIONES_VALIDAS: Record<string, string[]> = {
     pendiente: ["aceptado", "rechazado"],
     aceptado: ["en_preparacion"],
@@ -103,7 +142,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 export default function RestaurantePedidoDetalle() {
-  const { pedido, detalles, clienteNombre, direccion } = useLoaderData<typeof loader>();
+  const { pedido, detalles, clienteNombre, direccion, repartidoresDisponibles } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const isSubmitting = fetcher.state === "submitting";
   const acciones = TRANSICIONES[pedido.estado] ?? [];
@@ -168,6 +207,31 @@ export default function RestaurantePedidoDetalle() {
           ) : mensajeEstado ? (
             <p className="text-sm text-muted-foreground">{mensajeEstado}</p>
           ) : null}
+          {pedido.estado === "listo" && (
+            <Card>
+              <CardHeader><CardTitle>Asignar repartidor</CardTitle></CardHeader>
+              <CardContent>
+                {repartidoresDisponibles.length > 0 ? (
+                  <fetcher.Form method="post" className="space-y-3">
+                    <input type="hidden" name="intent" value="asignar-repartidor" />
+                    <select
+                      name="repartidor_id"
+                      className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      {repartidoresDisponibles.map((r) => (
+                        <option key={r.id} value={r.id}>{r.nombre}</option>
+                      ))}
+                    </select>
+                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                      Asignar
+                    </Button>
+                  </fetcher.Form>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No hay repartidores disponibles ahora.</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </RoleShell>
