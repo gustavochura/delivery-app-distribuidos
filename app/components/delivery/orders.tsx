@@ -51,7 +51,7 @@ export function OrderTimeline({ steps }: { steps: TimelineStep[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Linea de tiempo</CardTitle>
+        <CardTitle>Línea de tiempo</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {steps.map((step, index) => (
@@ -92,7 +92,7 @@ export function OrderSummary({
           <span>S/ {(subtotal / 100).toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span>Envio</span>
+          <span>Envío</span>
           <span>S/ {(costoEnvio / 100).toFixed(2)}</span>
         </div>
         <Separator />

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router";
-import { Home, Search, ShoppingCart } from "lucide-react";
+import { Home, Search } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -39,9 +39,11 @@ export function StatusBadge({ status }: { status: string }) {
   const variant =
     status === "cancelado" || status === "rechazado"
       ? "destructive"
-      : status === "entregado"
+      : status === "entregado" || status === "abierto"
         ? "default"
-        : "secondary";
+        : status === "cerrado"
+          ? "outline"
+          : "secondary";
 
   return (
     <Badge variant={variant}>
@@ -153,7 +155,7 @@ export function SidebarNavigation({
   return (
     <aside className="hidden w-56 shrink-0 space-y-1 md:block">
       {items.map((item) => {
-        const Icon = item.icon ?? ShoppingCart;
+        const Icon = item.icon ?? Home;
         const active = location.pathname === item.href;
 
         return (
