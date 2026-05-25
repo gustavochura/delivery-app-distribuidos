@@ -98,10 +98,18 @@ export async function action({ request }: Route.ActionArgs) {
     const detalleId = Number(formData.get("detalle_id"));
     const cantidad = Number(formData.get("cantidad"));
     const precioUnitario = Number(formData.get("precio_unitario"));
-    await db
-      .update(carritoDetallesTable)
-      .set({ cantidad, subtotal: cantidad * precioUnitario })
-      .where(eq(carritoDetallesTable.id, detalleId));
+    const [check] = await db
+      .select({ id: carritoDetallesTable.id })
+      .from(carritoDetallesTable)
+      .innerJoin(carritosTable, eq(carritosTable.id, carritoDetallesTable.carritoId))
+      .where(and(eq(carritoDetallesTable.id, detalleId), eq(carritosTable.clienteId, clienteId)))
+      .limit(1);
+    if (check) {
+      await db
+        .update(carritoDetallesTable)
+        .set({ cantidad, subtotal: cantidad * precioUnitario })
+        .where(eq(carritoDetallesTable.id, detalleId));
+    }
   }
 
   if (intent === "remove-item") {
@@ -109,10 +117,11 @@ export async function action({ request }: Route.ActionArgs) {
     const [detalle] = await db
       .select({ carritoId: carritoDetallesTable.carritoId })
       .from(carritoDetallesTable)
-      .where(eq(carritoDetallesTable.id, detalleId))
+      .innerJoin(carritosTable, eq(carritosTable.id, carritoDetallesTable.carritoId))
+      .where(and(eq(carritoDetallesTable.id, detalleId), eq(carritosTable.clienteId, clienteId)))
       .limit(1);
-    await db.delete(carritoDetallesTable).where(eq(carritoDetallesTable.id, detalleId));
     if (detalle) {
+      await db.delete(carritoDetallesTable).where(eq(carritoDetallesTable.id, detalleId));
       const restantes = await db
         .select({ id: carritoDetallesTable.id })
         .from(carritoDetallesTable)
