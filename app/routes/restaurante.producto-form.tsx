@@ -82,7 +82,7 @@ export default function RestauranteProductoForm() {
   const esEdicion = !!producto;
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  const [disponible, setDisponible] = useState(producto?.disponible ?? true);
+  const [disponible, setDisponible] = useState<boolean>(Boolean(producto?.disponible ?? true));
 
   return (
     <RoleShell
