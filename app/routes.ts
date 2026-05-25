@@ -34,7 +34,6 @@ export default [
 
   layout("routes/layouts/repartidor.tsx", [
     route("repartidor/home", "routes/repartidor.home.tsx"),
-    route("repartidor/pedidos/asignado", "routes/repartidor.pedido-asignado.tsx"),
     route("repartidor/pedidos/:pedido_id/mapa", "routes/repartidor.mapa.tsx"),
   ]),
 
