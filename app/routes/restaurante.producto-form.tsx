@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Form, redirect, useLoaderData, useNavigation } from "react-router";
 import { and, eq } from "drizzle-orm";
 import { Button } from "~/components/ui/button";
@@ -26,8 +25,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
         and(eq(productosTable.id, productoId), eq(productosTable.restauranteId, restauranteId)),
       )
       .limit(1);
-    producto = found ?? null;
-    if (!producto) throw redirect("/restaurante/productos");
+    if (!found) throw redirect("/restaurante/productos");
+    producto = { ...found, disponible: Boolean(found.disponible) };
   }
 
   return { producto, restauranteId };
@@ -82,8 +81,6 @@ export default function RestauranteProductoForm() {
   const esEdicion = !!producto;
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  const [disponible, setDisponible] = useState<boolean>(Boolean(producto?.disponible ?? true));
-
   return (
     <RoleShell
       title={esEdicion ? "Editar producto" : "Crear producto"}
@@ -151,8 +148,7 @@ export default function RestauranteProductoForm() {
                   El producto aparece en el menú del restaurante
                 </p>
               </div>
-              <input type="hidden" name="disponible" value={disponible ? "on" : ""} />
-              <Switch checked={disponible} onCheckedChange={setDisponible} />
+              <Switch name="disponible" defaultChecked={producto?.disponible ?? true} />
             </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={isSubmitting}>
