@@ -5,8 +5,8 @@ import { Card, CardContent } from "~/components/ui/card";
 
 const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined;
 
-const DEFAULT_LAT = -13.5319;
-const DEFAULT_LNG = -71.9675;
+const DEFAULT_LAT = -17.6394;
+const DEFAULT_LNG = -71.3375;
 
 export function AddressPickerMap({
   onCoordinates,
