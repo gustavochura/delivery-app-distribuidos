@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useFetcher, useLoaderData } from "react-router";
 import { eq } from "drizzle-orm";
 import { Plus } from "lucide-react";
@@ -63,7 +64,15 @@ function ToggleDisponibleButton({ producto }: { producto: { id: number; disponib
 
 export default function RestauranteProductos() {
   const { productos } = useLoaderData<typeof loader>();
+  const [q, setQ] = useState("");
   const categorias = Array.from(new Set(productos.map((p) => p.categoria).filter(Boolean)));
+  const productosFiltrados = q.trim()
+    ? productos.filter(
+        (p) =>
+          p.nombre.toLowerCase().includes(q.toLowerCase()) ||
+          p.categoria?.toLowerCase().includes(q.toLowerCase()),
+      )
+    : productos;
 
   return (
     <RoleShell
@@ -76,14 +85,14 @@ export default function RestauranteProductos() {
       }
     >
       <div className="space-y-5">
-        <SearchBar placeholder="Buscar producto" />
+        <SearchBar placeholder="Buscar producto" value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="flex gap-2 flex-wrap">
           {categorias.map((cat) => (
             <span key={cat} className="rounded-full border px-3 py-1 text-sm">{cat}</span>
           ))}
         </div>
         <div className="space-y-3">
-          {productos.map((producto) => (
+          {productosFiltrados.map((producto) => (
             <ProductAdminCard
               key={producto.id}
               product={producto}
