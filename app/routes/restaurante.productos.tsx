@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useFetcher, useLoaderData } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import { eq } from "drizzle-orm";
 import { Pencil, Plus } from "lucide-react";
 import { Button } from "~/components/ui/button";
@@ -21,46 +21,6 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { productos };
 }
 
-export async function action({ request }: Route.ActionArgs) {
-  const { activeRestauranteId: restauranteId } = await requireRestauranteActive(request);
-  const formData = await request.formData();
-  const intent = formData.get("intent");
-
-  if (intent === "toggle-availability") {
-    const productoId = Number(formData.get("producto_id"));
-    const disponible = formData.get("disponible") === "true";
-
-    const [producto] = await db
-      .select({ restauranteId: productosTable.restauranteId })
-      .from(productosTable)
-      .where(eq(productosTable.id, productoId))
-      .limit(1);
-
-    if (producto?.restauranteId === restauranteId) {
-      await db
-        .update(productosTable)
-        .set({ disponible: !disponible })
-        .where(eq(productosTable.id, productoId));
-    }
-  }
-
-  return null;
-}
-
-function ToggleDisponibleButton({ producto }: { producto: { id: number; disponible: boolean } }) {
-  const fetcher = useFetcher();
-  const isSubmitting = fetcher.state === "submitting";
-  return (
-    <fetcher.Form method="post">
-      <input type="hidden" name="intent" value="toggle-availability" />
-      <input type="hidden" name="producto_id" value={producto.id} />
-      <input type="hidden" name="disponible" value={String(producto.disponible)} />
-      <Button type="submit" variant="ghost" size="sm" disabled={isSubmitting}>
-        {isSubmitting ? "…" : producto.disponible ? "Pausar" : "Activar"}
-      </Button>
-    </fetcher.Form>
-  );
-}
 
 export default function RestauranteProductos() {
   const { productos } = useLoaderData<typeof loader>();
@@ -97,18 +57,15 @@ export default function RestauranteProductos() {
               key={producto.id}
               product={producto}
               actions={
-                <>
-                  <Button
-                    nativeButton={false}
-                    variant="ghost"
-                    size="sm"
-                    render={<Link to={`/restaurante/productos/${producto.id}`} />}
-                  >
-                    <Pencil className="size-3.5" />
-                    Editar
-                  </Button>
-                  <ToggleDisponibleButton producto={producto} />
-                </>
+                <Button
+                  nativeButton={false}
+                  variant="ghost"
+                  size="sm"
+                  render={<Link to={`/restaurante/productos/${producto.id}`} />}
+                >
+                  <Pencil className="size-3.5" />
+                  Editar
+                </Button>
               }
             />
           ))}

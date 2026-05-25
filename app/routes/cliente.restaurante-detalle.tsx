@@ -178,7 +178,7 @@ function ProductCardWithAdd({ product }: { product: ProductoDisplay }) {
           <div className="mt-3 flex items-center justify-between">
             <p className="font-semibold">S/ {(product.precio / 100).toFixed(2)}</p>
             <Badge variant={product.disponible ? "secondary" : "outline"}>
-              {product.disponible ? "Disponible" : "Agotado"}
+              {product.disponible ? "Disponible" : "No disponible"}
             </Badge>
           </div>
         </div>
