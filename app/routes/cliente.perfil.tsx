@@ -116,6 +116,16 @@ export default function ClientePerfil() {
     }
   }, [fetcherDireccion.data]);
 
+  function markPrincipal(id: number) {
+    setDirecciones((prev) => prev.map((d) => ({ ...d, principal: d.id === id })));
+    fetcherAccion.submit({ intent: "set-principal", id: String(id) }, { method: "post" });
+  }
+
+  function deleteDireccion(id: number) {
+    setDirecciones((prev) => prev.filter((d) => d.id !== id));
+    fetcherAccion.submit({ intent: "delete-direccion", id: String(id) }, { method: "post" });
+  }
+
   return (
     <RoleShell title="Mi perfil" description="Gestiona tu información y direcciones de entrega.">
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
@@ -190,21 +200,27 @@ export default function ClientePerfil() {
                   </div>
                   <div className="flex shrink-0 gap-1">
                     {!dir.principal && (
-                      <fetcherAccion.Form method="post">
-                        <input type="hidden" name="intent" value="set-principal" />
-                        <input type="hidden" name="id" value={dir.id} />
-                        <Button type="submit" variant="ghost" size="icon" className="size-8" title="Marcar como principal">
-                          <Star className="size-3.5" />
-                        </Button>
-                      </fetcherAccion.Form>
-                    )}
-                    <fetcherAccion.Form method="post">
-                      <input type="hidden" name="intent" value="delete-direccion" />
-                      <input type="hidden" name="id" value={dir.id} />
-                      <Button type="submit" variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive" title="Eliminar">
-                        <Trash2 className="size-3.5" />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        title="Marcar como principal"
+                        onClick={() => markPrincipal(dir.id)}
+                      >
+                        <Star className="size-3.5" />
                       </Button>
-                    </fetcherAccion.Form>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-destructive hover:text-destructive"
+                      title="Eliminar"
+                      onClick={() => deleteDireccion(dir.id)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
                   </div>
                 </div>
               ))}
