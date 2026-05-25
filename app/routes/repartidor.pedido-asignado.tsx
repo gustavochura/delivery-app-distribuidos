@@ -19,6 +19,8 @@ import type { Route } from "./+types/repartidor.pedido-asignado";
 export async function loader({ request }: Route.LoaderArgs) {
   const { profiles } = await requireRepartidor(request);
 
+  if (profiles.repartidor!.estado !== "disponible") throw redirect("/repartidor/home");
+
   // Pedidos listos sin repartidor asignado (cola de disponibles)
   const pedidos = await db
     .select({

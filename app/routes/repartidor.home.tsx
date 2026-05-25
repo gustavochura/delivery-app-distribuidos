@@ -70,6 +70,8 @@ export async function action({ request }: Route.ActionArgs) {
   const repartidorId = profiles.repartidor!.id;
   const estadoActual = profiles.repartidor!.estado;
 
+  if (estadoActual === "ocupado") return null;
+
   await db
     .update(repartidoresTable)
     .set({ estado: estadoActual === "disponible" ? "no_disponible" : "disponible" })
@@ -82,6 +84,7 @@ export default function RepartidorHome() {
   const { nombre, estado, entregasHoy, gananciaHoy, pedidoActivo } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const disponible = estado === "disponible";
+  const enEntrega = !!pedidoActivo;
   const isToggling = fetcher.state !== "idle";
 
   return (
@@ -95,12 +98,16 @@ export default function RepartidorHome() {
             <div>
               <p className="font-medium">Estado actual</p>
               <p className="text-sm text-muted-foreground">
-                {disponible ? "Disponible para recibir pedidos" : "No disponible"}
+                {enEntrega ? "En entrega" : disponible ? "Disponible para recibir pedidos" : "No disponible"}
               </p>
             </div>
             <fetcher.Form method="post">
-              <Button type="submit" variant={disponible ? "default" : "outline"} disabled={isToggling}>
-                {disponible ? "Disponible" : "No disponible"}
+              <Button
+                type="submit"
+                variant={disponible && !enEntrega ? "default" : "outline"}
+                disabled={isToggling || enEntrega}
+              >
+                {enEntrega ? "En entrega" : disponible ? "Disponible" : "No disponible"}
               </Button>
             </fetcher.Form>
           </CardContent>
