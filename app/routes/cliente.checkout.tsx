@@ -1,8 +1,10 @@
-import { Form, redirect, useLoaderData, useNavigation, useRouteLoaderData } from "react-router";
+import { useEffect, useState } from "react";
+import { Form, redirect, useFetcher, useLoaderData, useNavigation, useRouteLoaderData } from "react-router";
 import { and, eq } from "drizzle-orm";
-import { Home, ReceiptText, ShoppingCart, User } from "lucide-react";
+import { Home, Plus, ReceiptText, ShoppingCart, User } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { cn } from "~/lib/utils";
 import { db } from "~/database/client.server";
 import {
   carritosTable,
@@ -17,6 +19,7 @@ import {
 } from "~/database/schema";
 import { requireCliente } from "~/lib/roles.server";
 import { MobileBottomNav, RoleShell } from "~/components/delivery/common";
+import { AddressPickerMap } from "~/components/delivery/address-picker-map";
 import type { Route } from "./+types/cliente.checkout";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -66,13 +69,31 @@ export async function loader({ request }: Route.LoaderArgs) {
   const costoEnvio = gruposFiltrados.reduce((acc, g) => acc + g.tarifaEnvio, 0);
   const total = subtotal + costoEnvio;
 
-  return { grupos: gruposFiltrados, direcciones, subtotal, costoEnvio, total };
+  return { grupos: gruposFiltrados, direcciones, clienteId, subtotal, costoEnvio, total };
 }
 
 export async function action({ request }: Route.ActionArgs) {
   const { profiles } = await requireCliente(request);
   const clienteId = profiles.cliente!.id;
   const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent === "nueva-direccion") {
+    const direccionTexto = (formData.get("direccion") as string).trim();
+    if (!direccionTexto) return null;
+    const referencia = (formData.get("referencia") as string) || null;
+    const latRaw = formData.get("latitud");
+    const lngRaw = formData.get("longitud");
+    const latitud = latRaw ? Number(latRaw) : null;
+    const longitud = lngRaw ? Number(lngRaw) : null;
+
+    const [nueva] = await db
+      .insert(direccionesTable)
+      .values({ clienteId, direccion: direccionTexto, referencia, latitud, longitud, principal: false })
+      .returning();
+
+    return { nuevaDireccion: nueva };
+  }
 
   const direccionId = Number(formData.get("direccion_id"));
   const metodo = (formData.get("metodo") as string) ?? "efectivo";
@@ -160,11 +181,32 @@ export async function action({ request }: Route.ActionArgs) {
   return redirect(`/cliente/pedidos/${pedidoIds[0]}`);
 }
 
+type Direccion = Awaited<ReturnType<typeof loader>>["direcciones"][number];
+
 export default function ClienteCheckout() {
-  const { grupos, direcciones, subtotal, costoEnvio, total } = useLoaderData<typeof loader>();
+  const { grupos, direcciones: direccionesIniciales, subtotal, costoEnvio, total } = useLoaderData<typeof loader>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
-  const principal = direcciones.find((d) => d.principal) ?? direcciones[0];
+
+  const fetcherDireccion = useFetcher<{ nuevaDireccion: Direccion }>();
+  const isSavingDireccion = fetcherDireccion.state === "submitting";
+
+  const inicial = direccionesIniciales.find((d) => d.principal) ?? direccionesIniciales[0];
+  const [todasDirecciones, setTodasDirecciones] = useState<Direccion[]>(direccionesIniciales);
+  const [selectedId, setSelectedId] = useState<number | null>(inicial?.id ?? null);
+  const [showNueva, setShowNueva] = useState(direccionesIniciales.length === 0);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    const nueva = fetcherDireccion.data?.nuevaDireccion;
+    if (nueva) {
+      setTodasDirecciones((prev) => [...prev, nueva]);
+      setSelectedId(nueva.id);
+      setShowNueva(false);
+      setCoords(null);
+    }
+  }, [fetcherDireccion.data]);
+
   const layout = useRouteLoaderData("routes/layouts/cliente") as
     | { carritoCount: number; availableRoles: { key: string }[] }
     | undefined;
@@ -180,7 +222,7 @@ export default function ClienteCheckout() {
   return (
     <RoleShell title="Confirmar pedidos" description={`${grupos.length} pedido${grupos.length > 1 ? "s" : ""} a confirmar`}>
       <Form method="post">
-        <input type="hidden" name="direccion_id" value={principal?.id ?? ""} />
+        <input type="hidden" name="direccion_id" value={selectedId ?? ""} />
         <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
           <div className="space-y-4">
             <Card>
@@ -220,23 +262,68 @@ export default function ClienteCheckout() {
                 ))}
               </CardContent>
             </Card>
+
             <Card>
-              <CardHeader><CardTitle>Direccion de entrega</CardTitle></CardHeader>
-              <CardContent>
-                {principal ? (
-                  <>
-                    <p>{principal.direccion}</p>
-                    {principal.referencia && (
-                      <p className="mt-1 text-sm text-muted-foreground">Ref: {principal.referencia}</p>
+              <CardHeader><CardTitle>Dirección de entrega</CardTitle></CardHeader>
+              <CardContent className="space-y-2">
+                {todasDirecciones.map((dir) => (
+                  <button
+                    key={dir.id}
+                    type="button"
+                    onClick={() => setSelectedId(dir.id)}
+                    className={cn(
+                      "w-full rounded-lg border p-3 text-left text-sm transition-colors",
+                      selectedId === dir.id
+                        ? "border-primary bg-primary/5"
+                        : "hover:bg-muted",
                     )}
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No tienes direcciones guardadas.</p>
+                  >
+                    <p className="font-medium">{dir.direccion}</p>
+                    {dir.referencia && (
+                      <p className="text-muted-foreground">{dir.referencia}</p>
+                    )}
+                    {dir.principal && (
+                      <span className="text-xs font-medium text-primary">Principal</span>
+                    )}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => setShowNueva((v) => !v)}
+                  className="flex w-full items-center gap-2 rounded-lg border border-dashed p-3 text-sm text-muted-foreground transition-colors hover:bg-muted"
+                >
+                  <Plus className="size-4" />
+                  Agregar nueva dirección
+                </button>
+
+                {showNueva && (
+                  <fetcherDireccion.Form method="post" className="space-y-3 rounded-lg border p-3">
+                    <input type="hidden" name="intent" value="nueva-direccion" />
+                    <input type="hidden" name="latitud" value={coords?.lat ?? ""} />
+                    <input type="hidden" name="longitud" value={coords?.lng ?? ""} />
+                    <input
+                      name="direccion"
+                      required
+                      placeholder="Ej. Av. La Cultura 1800, UNAM"
+                      className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    />
+                    <input
+                      name="referencia"
+                      placeholder="Referencia (opcional)"
+                      className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    />
+                    <AddressPickerMap onCoordinates={(lat, lng) => setCoords({ lat, lng })} />
+                    <Button type="submit" size="sm" disabled={isSavingDireccion}>
+                      {isSavingDireccion ? "Guardando…" : "Guardar y usar"}
+                    </Button>
+                  </fetcherDireccion.Form>
                 )}
               </CardContent>
             </Card>
+
             <Card>
-              <CardHeader><CardTitle>Metodo de pago</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Método de pago</CardTitle></CardHeader>
               <CardContent>
                 <select
                   name="metodo"
@@ -259,6 +346,7 @@ export default function ClienteCheckout() {
               </CardContent>
             </Card>
           </div>
+
           <div className="space-y-3">
             <Card>
               <CardContent className="space-y-2 py-4">
@@ -276,7 +364,7 @@ export default function ClienteCheckout() {
                 </div>
               </CardContent>
             </Card>
-            <Button type="submit" className="w-full" disabled={!principal || isSubmitting}>
+            <Button type="submit" className="w-full" disabled={!selectedId || isSubmitting}>
               {isSubmitting ? "Procesando…" : `Confirmar ${grupos.length > 1 ? `${grupos.length} pedidos` : "pedido"}`}
             </Button>
           </div>
