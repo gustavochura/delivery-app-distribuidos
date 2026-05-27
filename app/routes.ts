@@ -2,6 +2,7 @@ import { type RouteConfig, index, route, layout } from "@react-router/dev/routes
 
 export default [
   route("api/auth/*", "routes/api.auth.$.ts"),
+  route("api/qstash/pedido-creado", "routes/api.qstash.pedido-creado.ts"),
   route("sign-in", "routes/sign-in.tsx"),
   route("sign-up", "routes/sign-up.tsx"),
   route("dashboard", "routes/dashboard.tsx"),
@@ -19,6 +20,7 @@ export default [
     route("cliente/checkout", "routes/cliente.checkout.tsx"),
     route("cliente/pedidos", "routes/cliente.pedidos.tsx"),
     route("cliente/pedidos/:pedido_id", "routes/cliente.pedido-detalle.tsx"),
+    route("cliente/pedidos/:pedido_id/ubicacion", "routes/cliente.pedido-ubicacion.tsx"),
     route("cliente/pedidos/:pedido_id/seguimiento", "routes/cliente.seguimiento.tsx"),
     route("cliente/perfil", "routes/cliente.perfil.tsx"),
   ]),

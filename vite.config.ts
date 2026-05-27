@@ -4,6 +4,9 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [tailwindcss(), reactRouter()],
+  server: {
+    allowedHosts: [".trycloudflare.com"],
+  },
   resolve: {
     tsconfigPaths: true,
   },
