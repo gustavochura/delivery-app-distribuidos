@@ -378,7 +378,7 @@ async function seedDemoData() {
         nombre: "Polleria El Buen Sabor",
         descripcion: "La mejor pollería de la ciudad. Brasa y más.",
         categoria: "Pollo a la brasa",
-        direccion: "Av. La Cultura 421",
+        direccion: "Av. La Cultura 421, Ilo",
         imagen:
           "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=1200&auto=format&fit=crop",
         calificacion: 4.8,
@@ -444,7 +444,7 @@ async function seedDemoData() {
       nombre: "Pizza Centro",
       descripcion: "Pizza artesanal horneada en horno de leña.",
       categoria: "Pizza artesanal",
-      direccion: "Jr. Arequipa 210",
+      direccion: "Jr. Arequipa 210, Ilo",
       imagen: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1200&auto=format&fit=crop",
       calificacion: 4.6,
       tiempoEstimado: "30-40 min",
@@ -460,7 +460,7 @@ async function seedDemoData() {
       nombre: "Burger House",
       descripcion: "Hamburguesas artesanales con carne al 100%.",
       categoria: "Hamburguesas",
-      direccion: "Calle Ilo 88",
+      direccion: "Calle Ilo 88, Ilo",
       imagen: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1200&auto=format&fit=crop",
       calificacion: 4.5,
       tiempoEstimado: "20-30 min",
@@ -476,7 +476,7 @@ async function seedDemoData() {
       nombre: "Sushi Andino",
       descripcion: "Sushi fusión con ingredientes locales.",
       categoria: "Sushi fusión",
-      direccion: "Calle Moquegua 555",
+      direccion: "Calle Callao 555, Ilo",
       imagen: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1200&auto=format&fit=crop",
       calificacion: 4.7,
       tiempoEstimado: "35-45 min",
@@ -492,7 +492,7 @@ async function seedDemoData() {
       nombre: "La Cocina Criolla",
       descripcion: "Autentica comida peruana con sabor casero.",
       categoria: "Comida criolla",
-      direccion: "Av. San Martin 340",
+      direccion: "Av. San Martin 340, Ilo",
       imagen: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?q=80&w=1200&auto=format&fit=crop",
       calificacion: 4.9,
       tiempoEstimado: "40-50 min",
@@ -508,7 +508,7 @@ async function seedDemoData() {
       nombre: "Dulce Tentacion",
       descripcion: "Postres artesanales y reposteria fina.",
       categoria: "Postres y cafeteria",
-      direccion: "Pasaje Comercio 12",
+      direccion: "Pasaje Comercio 12, Ilo",
       imagen: "https://images.unsplash.com/photo-1488477181946-6428a0291777?q=80&w=1200&auto=format&fit=crop",
       calificacion: 4.8,
       tiempoEstimado: "15-25 min",
@@ -583,10 +583,10 @@ async function seedDemoData() {
       if (!existingGDir) {
         await db.insert(direccionesTable).values({
           clienteId: gustavoCliente.id,
-          direccion: "Av. La Cultura 1800, UNAM",
-          referencia: "Campus universitario, edificio principal",
-          latitud: -17.189,
-          longitud: -70.931,
+          direccion: "Av. La Cultura 1800, Ilo",
+          referencia: "Zona centrica de Ilo",
+          latitud: -17.6394,
+          longitud: -71.3375,
           principal: true,
         });
         console.log("Direccion demo creada para Gustavo");
@@ -618,10 +618,10 @@ async function seedDemoData() {
       if (!existingDir) {
         await db.insert(direccionesTable).values({
           clienteId: luisCliente.id,
-          direccion: "Urb. Santa Fortunata Mz. B Lt. 12",
+          direccion: "Urb. Miramar Mz. B Lt. 12, Ilo",
           referencia: "Porton negro, frente al parque",
-          latitud: -17.187,
-          longitud: -70.923,
+          latitud: -17.6412,
+          longitud: -71.3338,
           principal: true,
         });
         console.log("Direccion demo creada para Luis");

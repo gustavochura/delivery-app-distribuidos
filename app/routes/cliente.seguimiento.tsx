@@ -1,5 +1,6 @@
-import { Link, redirect, useLoaderData, useRouteLoaderData } from "react-router";
-import { eq } from "drizzle-orm";
+import { useEffect, useState } from "react";
+import { Link, redirect, useFetcher, useLoaderData, useRouteLoaderData } from "react-router";
+import { desc, eq } from "drizzle-orm";
 import { ArrowLeft, Home, ReceiptText, ShoppingCart, User } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -14,8 +15,22 @@ import {
 } from "~/database/schema";
 import { requireCliente } from "~/lib/roles.server";
 import { MobileBottomNav, RoleShell, StatusBadge } from "~/components/delivery/common";
+import type { DeliveryMapPoint } from "~/components/delivery/mapbox-delivery-map";
 import { MapboxDeliveryMap } from "~/components/delivery/mapbox-delivery-map";
 import type { Route } from "./+types/cliente.seguimiento";
+
+type LocationPollData = {
+  redisConfigured: boolean;
+  location: {
+    lat: number;
+    lng: number;
+    repartidorId: number;
+    pedidoId: number;
+    updatedAt: string;
+  } | null;
+  estado: string;
+  hasDriver: boolean;
+};
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const { profiles } = await requireCliente(request);
@@ -53,6 +68,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       .select()
       .from(ubicacionesRepartidoresTable)
       .where(eq(ubicacionesRepartidoresTable.repartidorId, pedido.repartidorId))
+      .orderBy(desc(ubicacionesRepartidoresTable.updatedAt))
       .limit(1);
     ubicacion = ub ?? null;
   }
@@ -66,8 +82,39 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   return { pedido, restaurante, repartidor, ubicacion, direccion };
 }
 
+function getPointFromDireccion(
+  direccion: Awaited<ReturnType<typeof loader>>["direccion"],
+): DeliveryMapPoint | null {
+  if (direccion?.latitud == null || direccion.longitud == null) return null;
+  return { latitude: direccion.latitud, longitude: direccion.longitud };
+}
+
+function getPointFromDbLocation(
+  ubicacion: Awaited<ReturnType<typeof loader>>["ubicacion"],
+): DeliveryMapPoint | null {
+  if (!ubicacion) return null;
+  return { latitude: ubicacion.latitud, longitude: ubicacion.longitud };
+}
+
+function formatUpdatedAt(value: string) {
+  const seconds = Math.max(0, Math.round((Date.now() - Date.parse(value)) / 1000));
+  if (seconds < 5) return "actualizada ahora";
+  if (seconds < 60) return `actualizada hace ${seconds} s`;
+  return `actualizada hace ${Math.round(seconds / 60)} min`;
+}
+
 export default function ClienteSeguimiento() {
-  const { pedido, repartidor } = useLoaderData<typeof loader>();
+  const { pedido, repartidor, ubicacion, direccion } = useLoaderData<typeof loader>();
+  const locationFetcher = useFetcher<LocationPollData>();
+  const [driverPoint, setDriverPoint] = useState<DeliveryMapPoint | null>(
+    getPointFromDbLocation(ubicacion),
+  );
+  const [locationStatus, setLocationStatus] = useState(
+    repartidor
+      ? "Esperando ubicacion del repartidor en Redis."
+      : "Esperando que un repartidor tome el pedido.",
+  );
+  const customerPoint = getPointFromDireccion(direccion);
   const layout = useRouteLoaderData("routes/layouts/cliente") as
     | { carritoCount: number; availableRoles: { key: string }[] }
     | undefined;
@@ -80,6 +127,50 @@ export default function ClienteSeguimiento() {
     ...(availableRoles.length > 1 ? [{ href: "/dashboard", label: "Roles", icon: User }] : []),
   ];
 
+  useEffect(() => {
+    if (!repartidor) return;
+
+    let cancelled = false;
+    const loadLocation = () => {
+      if (cancelled) return;
+      locationFetcher.load(`/cliente/pedidos/${pedido.id}/ubicacion`);
+    };
+
+    loadLocation();
+    const interval = window.setInterval(loadLocation, 4000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [pedido.id, repartidor]);
+
+  useEffect(() => {
+    const data = locationFetcher.data;
+    if (!data) return;
+
+    if (!data.redisConfigured) {
+      setLocationStatus("Redis no esta configurado.");
+      return;
+    }
+
+    if (!data.hasDriver) {
+      setLocationStatus("Esperando que un repartidor tome el pedido.");
+      return;
+    }
+
+    if (!data.location) {
+      setLocationStatus("Esperando ubicacion del repartidor en Redis.");
+      return;
+    }
+
+    setDriverPoint({
+      latitude: data.location.lat,
+      longitude: data.location.lng,
+    });
+    setLocationStatus(formatUpdatedAt(data.location.updatedAt));
+  }, [locationFetcher.data]);
+
   return (
     <RoleShell
       title="Seguimiento en mapa"
@@ -91,7 +182,7 @@ export default function ClienteSeguimiento() {
       }
     >
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-        <MapboxDeliveryMap />
+        <MapboxDeliveryMap driver={driverPoint} customer={customerPoint} />
         <Card>
           <CardHeader>
             <CardTitle><StatusBadge status={pedido.estado} /></CardTitle>
@@ -105,6 +196,7 @@ export default function ClienteSeguimiento() {
             {repartidor && (
               <div className="rounded-lg border p-3">
                 <p className="font-medium">{repartidor.nombre}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{locationStatus}</p>
               </div>
             )}
           </CardContent>

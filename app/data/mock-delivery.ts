@@ -27,7 +27,7 @@ export const restaurants = [
     eta: "25-35 min",
     deliveryFee: "S/ 4.00",
     status: "abierto",
-    address: "Av. La Cultura 421",
+    address: "Av. La Cultura 421, Ilo",
     image:
       "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?q=80&w=1200&auto=format&fit=crop",
     promo: "20% en combos familiares",
@@ -40,7 +40,7 @@ export const restaurants = [
     eta: "30-40 min",
     deliveryFee: "S/ 3.50",
     status: "abierto",
-    address: "Jr. Arequipa 210",
+    address: "Jr. Arequipa 210, Ilo",
     image:
       "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1200&auto=format&fit=crop",
     promo: "2x1 en personales",
@@ -53,7 +53,7 @@ export const restaurants = [
     eta: "35-45 min",
     deliveryFee: "S/ 5.00",
     status: "cerrado",
-    address: "Calle Moquegua 555",
+    address: "Calle Callao 555, Ilo",
     image:
       "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=1200&auto=format&fit=crop",
     promo: "Rolls seleccionados",
@@ -115,7 +115,7 @@ export const order = {
   subtotal: 89.7,
   deliveryFee: 4,
   payment: "Yape/Plin",
-  address: "Urb. Santa Fortunata Mz. B Lt. 12",
+  address: "Urb. Miramar Mz. B Lt. 12, Ilo",
   createdAt: "Hoy, 12:42",
   items: cartItems,
 };
@@ -174,9 +174,9 @@ export const dashboardRoles = [
 ];
 
 export const deliveryPoints = {
-  restaurant: { longitude: -70.935, latitude: -17.193 },
-  customer: { longitude: -70.923, latitude: -17.187 },
-  driver: { longitude: -70.929, latitude: -17.19 },
+  restaurant: { longitude: -71.3382, latitude: -17.6391 },
+  customer: { longitude: -71.3338, latitude: -17.6412 },
+  driver: { longitude: -71.3361, latitude: -17.6401 },
 };
 
 export const dailyStats = [

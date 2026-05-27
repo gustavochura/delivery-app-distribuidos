@@ -6,17 +6,9 @@ import type { Feature, LineString } from "geojson";
 
 const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined;
 
-const routeGeoJson: Feature<LineString> = {
-  type: "Feature",
-  properties: {},
-  geometry: {
-    type: "LineString",
-    coordinates: [
-      [deliveryPoints.restaurant.longitude, deliveryPoints.restaurant.latitude],
-      [deliveryPoints.driver.longitude, deliveryPoints.driver.latitude],
-      [deliveryPoints.customer.longitude, deliveryPoints.customer.latitude],
-    ],
-  },
+export type DeliveryMapPoint = {
+  latitude: number;
+  longitude: number;
 };
 
 function MarkerBubble({
@@ -36,7 +28,35 @@ function MarkerBubble({
   );
 }
 
-export function MapboxDeliveryMap({ mode = "cliente" }: { mode?: "cliente" | "repartidor" }) {
+export function MapboxDeliveryMap({
+  mode = "cliente",
+  restaurant,
+  driver,
+  customer,
+}: {
+  mode?: "cliente" | "repartidor";
+  restaurant?: DeliveryMapPoint | null;
+  driver?: DeliveryMapPoint | null;
+  customer?: DeliveryMapPoint | null;
+}) {
+  const points = {
+    restaurant: restaurant ?? deliveryPoints.restaurant,
+    driver: driver ?? deliveryPoints.driver,
+    customer: customer ?? deliveryPoints.customer,
+  };
+  const routeGeoJson: Feature<LineString> = {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "LineString",
+      coordinates: [
+        [points.restaurant.longitude, points.restaurant.latitude],
+        [points.driver.longitude, points.driver.latitude],
+        [points.customer.longitude, points.customer.latitude],
+      ],
+    },
+  };
+
   if (!token) {
     return (
       <Card className="overflow-hidden">
@@ -58,8 +78,8 @@ export function MapboxDeliveryMap({ mode = "cliente" }: { mode?: "cliente" | "re
       <Map
         mapboxAccessToken={token}
         initialViewState={{
-          longitude: deliveryPoints.driver.longitude,
-          latitude: deliveryPoints.driver.latitude,
+          longitude: points.driver.longitude,
+          latitude: points.driver.latitude,
           zoom: 14,
           pitch: mode === "repartidor" ? 45 : 25,
         }}
@@ -77,17 +97,17 @@ export function MapboxDeliveryMap({ mode = "cliente" }: { mode?: "cliente" | "re
             }}
           />
         </Source>
-        <Marker {...deliveryPoints.restaurant}>
+        <Marker {...points.restaurant}>
           <MarkerBubble label="Restaurante">
             <Store className="size-4" />
           </MarkerBubble>
         </Marker>
-        <Marker {...deliveryPoints.driver}>
+        <Marker {...points.driver}>
           <MarkerBubble label="Repartidor">
             <Bike className="size-4" />
           </MarkerBubble>
         </Marker>
-        <Marker {...deliveryPoints.customer}>
+        <Marker {...points.customer}>
           <MarkerBubble label="Cliente">
             <Home className="size-4" />
           </MarkerBubble>

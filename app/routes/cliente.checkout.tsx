@@ -18,6 +18,7 @@ import {
   seguimientoPedidosTable,
 } from "~/database/schema";
 import { requireCliente } from "~/lib/roles.server";
+import { publishPedidoCreado } from "~/lib/qstash.server";
 import { MobileBottomNav, RoleShell } from "~/components/delivery/common";
 import { AddressPickerMap } from "~/components/delivery/address-picker-map";
 import type { Route } from "./+types/cliente.checkout";
@@ -175,6 +176,27 @@ export async function action({ request }: Route.ActionArgs) {
 
     await db.update(carritosTable).set({ estado: "completado" }).where(eq(carritosTable.id, carrito.id));
 
+    const qstash = await publishPedidoCreado({
+      event: "pedido.creado",
+      pedidoId: pedido.id,
+      restauranteId: carrito.restauranteId,
+      clienteId,
+    });
+
+    if (!qstash.published) {
+      await db.insert(seguimientoPedidosTable).values({
+        pedidoId: pedido.id,
+        estado:
+          qstash.reason === "missing_config"
+            ? "qstash_no_configurado"
+            : "qstash_error",
+        descripcion:
+          qstash.reason === "missing_config"
+            ? "QStash no configurado: falta token, signing keys o APP_BASE_URL"
+            : "No se pudo publicar el evento pedido.creado en QStash",
+      });
+    }
+
     pedidoIds.push(pedido.id);
   }
 
@@ -305,7 +327,7 @@ export default function ClienteCheckout() {
                     <input
                       name="direccion"
                       required
-                      placeholder="Ej. Av. La Cultura 1800, UNAM"
+                      placeholder="Ej. Av. La Cultura 1800, Ilo"
                       className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     />
                     <input
