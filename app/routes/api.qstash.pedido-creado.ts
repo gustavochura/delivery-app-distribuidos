@@ -4,6 +4,7 @@ import { db } from "~/database/client.server";
 import { pedidosTable, seguimientoPedidosTable } from "~/database/schema";
 import {
   type PedidoCreadoEvent,
+  getPedidoCreadoUrl,
   verifyQstashSignature,
 } from "~/lib/qstash.server";
 
@@ -35,9 +36,15 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: "Missing QStash signature" }, { status: 401 });
   }
 
+  const webhookUrl = getPedidoCreadoUrl();
+  if (!webhookUrl) {
+    return json({ error: "APP_BASE_URL not configured" }, { status: 500 });
+  }
+
   const isValid = await verifyQstashSignature({
     body: rawBody,
     signature,
+    url: webhookUrl,
     upstashRegion: request.headers.get("Upstash-Region"),
   });
 

@@ -83,7 +83,7 @@ export async function loader({ request }: Route.LoaderArgs) {
       .innerJoin(clientesTable, eq(clientesTable.id, pedidosTable.clienteId))
       .innerJoin(usuariosTable, eq(usuariosTable.id, clientesTable.usuarioId))
       .innerJoin(direccionesTable, eq(direccionesTable.id, pedidosTable.direccionId))
-      .where(inArray(pedidosTable.estado, ["listo", "buscando_repartidor"]))
+      .where(eq(pedidosTable.estado, "listo"))
       .limit(5);
   }
 
@@ -106,30 +106,32 @@ export async function action({ request }: Route.ActionArgs) {
 
   if (intent === "accept") {
     const pedidoId = Number(formData.get("pedido_id"));
-    const [pedido] = await db
-      .select({ estado: pedidosTable.estado })
-      .from(pedidosTable)
-      .where(eq(pedidosTable.id, pedidoId))
-      .limit(1);
 
-    if (!pedido || !["listo", "buscando_repartidor"].includes(pedido.estado)) return null;
+    let accepted = false;
+    await db.transaction(async (tx) => {
+      const updated = await tx
+        .update(pedidosTable)
+        .set({ repartidorId, estado: "repartidor_asignado" })
+        .where(and(eq(pedidosTable.id, pedidoId), eq(pedidosTable.estado, "listo")))
+        .returning({ id: pedidosTable.id });
 
-    await db
-      .update(pedidosTable)
-      .set({ repartidorId, estado: "repartidor_asignado" })
-      .where(eq(pedidosTable.id, pedidoId));
+      if (updated.length === 0) return;
 
-    await db.insert(seguimientoPedidosTable).values({
-      pedidoId,
-      estado: "repartidor_asignado",
-      descripcion: "Repartidor asignado al pedido",
+      await tx.insert(seguimientoPedidosTable).values({
+        pedidoId,
+        estado: "repartidor_asignado",
+        descripcion: "Repartidor asignado al pedido",
+      });
+
+      await tx
+        .update(repartidoresTable)
+        .set({ estado: "ocupado" })
+        .where(eq(repartidoresTable.id, repartidorId));
+
+      accepted = true;
     });
 
-    await db
-      .update(repartidoresTable)
-      .set({ estado: "ocupado" })
-      .where(eq(repartidoresTable.id, repartidorId));
-
+    if (!accepted) return null;
     return redirect(`/repartidor/pedidos/${pedidoId}/mapa`);
   }
 

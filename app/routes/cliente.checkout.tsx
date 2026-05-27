@@ -116,88 +116,92 @@ export async function action({ request }: Route.ActionArgs) {
   if (carritos.length === 0) throw redirect("/cliente/carrito");
 
   const pedidoIds: number[] = [];
+  const qstashJobs: { pedidoId: number; restauranteId: number }[] = [];
 
-  for (const carrito of carritos) {
-    const items = await db
-      .select({
-        productoId: carritoDetallesTable.productoId,
-        nombre: productosTable.nombre,
-        cantidad: carritoDetallesTable.cantidad,
-        precioUnitario: carritoDetallesTable.precioUnitario,
-        subtotal: carritoDetallesTable.subtotal,
-      })
-      .from(carritoDetallesTable)
-      .innerJoin(productosTable, eq(productosTable.id, carritoDetallesTable.productoId))
-      .where(eq(carritoDetallesTable.carritoId, carrito.id));
+  await db.transaction(async (tx) => {
+    for (const carrito of carritos) {
+      const items = await tx
+        .select({
+          productoId: carritoDetallesTable.productoId,
+          nombre: productosTable.nombre,
+          cantidad: carritoDetallesTable.cantidad,
+          precioUnitario: carritoDetallesTable.precioUnitario,
+          subtotal: carritoDetallesTable.subtotal,
+        })
+        .from(carritoDetallesTable)
+        .innerJoin(productosTable, eq(productosTable.id, carritoDetallesTable.productoId))
+        .where(eq(carritoDetallesTable.carritoId, carrito.id));
 
-    if (items.length === 0) continue;
+      if (items.length === 0) continue;
 
-    const [restauranteInfo] = await db
-      .select({ tarifaEnvio: restaurantesTable.tarifaEnvio })
-      .from(restaurantesTable)
-      .where(eq(restaurantesTable.id, carrito.restauranteId))
-      .limit(1);
-    const subtotal = items.reduce((acc, i) => acc + i.subtotal, 0);
-    const costoEnvio = restauranteInfo?.tarifaEnvio ?? 400;
-    const total = subtotal + costoEnvio;
+      const [restauranteInfo] = await tx
+        .select({ tarifaEnvio: restaurantesTable.tarifaEnvio })
+        .from(restaurantesTable)
+        .where(eq(restaurantesTable.id, carrito.restauranteId))
+        .limit(1);
+      const subtotal = items.reduce((acc, i) => acc + i.subtotal, 0);
+      const costoEnvio = restauranteInfo?.tarifaEnvio ?? 400;
+      const total = subtotal + costoEnvio;
 
-    const [pedido] = await db
-      .insert(pedidosTable)
-      .values({
-        clienteId,
-        restauranteId: carrito.restauranteId,
-        direccionId,
-        estado: "pendiente",
-        subtotal,
-        costoEnvio,
-        total,
-        notas,
-      })
-      .returning({ id: pedidosTable.id });
+      const [pedido] = await tx
+        .insert(pedidosTable)
+        .values({
+          clienteId,
+          restauranteId: carrito.restauranteId,
+          direccionId,
+          estado: "pendiente",
+          subtotal,
+          costoEnvio,
+          total,
+          notas,
+        })
+        .returning({ id: pedidosTable.id });
 
-    await db.insert(pedidoDetallesTable).values(
-      items.map((i) => ({
+      await tx.insert(pedidoDetallesTable).values(
+        items.map((i) => ({
+          pedidoId: pedido.id,
+          productoId: i.productoId,
+          productoNombre: i.nombre,
+          cantidad: i.cantidad,
+          precioUnitario: i.precioUnitario,
+          subtotal: i.subtotal,
+        })),
+      );
+
+      await tx.insert(pagosTable).values({ pedidoId: pedido.id, monto: total, metodo, estado: "pendiente" });
+
+      await tx.insert(seguimientoPedidosTable).values({
         pedidoId: pedido.id,
-        productoId: i.productoId,
-        productoNombre: i.nombre,
-        cantidad: i.cantidad,
-        precioUnitario: i.precioUnitario,
-        subtotal: i.subtotal,
-      })),
-    );
+        estado: "pedido_creado",
+        descripcion: "Pedido creado por el cliente",
+      });
 
-    await db.insert(pagosTable).values({ pedidoId: pedido.id, monto: total, metodo, estado: "pendiente" });
+      await tx.update(carritosTable).set({ estado: "completado" }).where(eq(carritosTable.id, carrito.id));
 
-    await db.insert(seguimientoPedidosTable).values({
-      pedidoId: pedido.id,
-      estado: "pedido_creado",
-      descripcion: "Pedido creado por el cliente",
-    });
+      pedidoIds.push(pedido.id);
+      qstashJobs.push({ pedidoId: pedido.id, restauranteId: carrito.restauranteId });
+    }
+  });
 
-    await db.update(carritosTable).set({ estado: "completado" }).where(eq(carritosTable.id, carrito.id));
-
+  // Publicar eventos QStash fuera de la transacción para no bloquearla con I/O externo
+  for (const { pedidoId, restauranteId } of qstashJobs) {
     const qstash = await publishPedidoCreado({
       event: "pedido.creado",
-      pedidoId: pedido.id,
-      restauranteId: carrito.restauranteId,
+      pedidoId,
+      restauranteId,
       clienteId,
     });
 
     if (!qstash.published) {
       await db.insert(seguimientoPedidosTable).values({
-        pedidoId: pedido.id,
-        estado:
-          qstash.reason === "missing_config"
-            ? "qstash_no_configurado"
-            : "qstash_error",
+        pedidoId,
+        estado: qstash.reason === "missing_config" ? "qstash_no_configurado" : "qstash_error",
         descripcion:
           qstash.reason === "missing_config"
             ? "QStash no configurado: falta token, signing keys o APP_BASE_URL"
             : "No se pudo publicar el evento pedido.creado en QStash",
       });
     }
-
-    pedidoIds.push(pedido.id);
   }
 
   return redirect(`/cliente/pedidos/${pedidoIds[0]}`);

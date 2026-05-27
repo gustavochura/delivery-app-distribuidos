@@ -95,16 +95,16 @@ export async function publishPedidoCreado(
 export async function verifyQstashSignature({
   body,
   signature,
+  url,
   upstashRegion,
 }: {
   body: string;
   signature: string;
+  url: string;
   upstashRegion?: string | null;
 }) {
   const qstashReceiver = getQstashReceiver();
-  const url = getPedidoCreadoUrl();
-
-  if (!qstashReceiver || !url) return false;
+  if (!qstashReceiver) return false;
 
   try {
     return await qstashReceiver.verify({
