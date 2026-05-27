@@ -209,7 +209,9 @@ export const carritosTable = sqliteTable("carritos", {
   estado: text("estado").default("activo").notNull(),
   total: integer("total").default(0).notNull(),
   ...timestamps,
-});
+}, (table) => [
+  index("carritos_cliente_estado_idx").on(table.clienteId, table.estado),
+]);
 
 export const carritoDetallesTable = sqliteTable(
   "carrito_detalles",
@@ -254,7 +256,11 @@ export const pedidosTable = sqliteTable("pedidos", {
   total: integer("total").default(0).notNull(),
   notas: text("notas"),
   ...timestamps,
-});
+}, (table) => [
+  index("pedidos_restaurante_estado_idx").on(table.restauranteId, table.estado),
+  index("pedidos_repartidor_idx").on(table.repartidorId),
+  index("pedidos_cliente_idx").on(table.clienteId),
+]);
 
 export const pedidoDetallesTable = sqliteTable("pedido_detalles", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -269,7 +275,9 @@ export const pedidoDetallesTable = sqliteTable("pedido_detalles", {
   precioUnitario: integer("precio_unitario").notNull(),
   subtotal: integer("subtotal").notNull(),
   ...timestamps,
-});
+}, (table) => [
+  index("pedido_detalles_pedido_idx").on(table.pedidoId),
+]);
 
 export const pagosTable = sqliteTable("pagos", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -291,23 +299,10 @@ export const seguimientoPedidosTable = sqliteTable("seguimiento_pedidos", {
   estado: text("estado").notNull(),
   descripcion: text("descripcion"),
   ...timestamps,
-});
+}, (table) => [
+  index("seguimiento_pedido_idx").on(table.pedidoId),
+]);
 
-export const ubicacionesRepartidoresTable = sqliteTable(
-  "ubicaciones_repartidores",
-  {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    repartidorId: integer("repartidor_id")
-      .notNull()
-      .references(() => repartidoresTable.id, { onDelete: "cascade" }),
-    pedidoId: integer("pedido_id").references(() => pedidosTable.id, {
-      onDelete: "set null",
-    }),
-    latitud: real("latitud").notNull(),
-    longitud: real("longitud").notNull(),
-    ...timestamps,
-  },
-);
 
 export const userRelations = relations(user, ({ one, many }) => ({
   usuario: one(usuariosTable, {
@@ -366,7 +361,6 @@ export const repartidoresRelations = relations(
       references: [usuariosTable.id],
     }),
     pedidos: many(pedidosTable),
-    ubicaciones: many(ubicacionesRepartidoresTable),
   }),
 );
 
@@ -460,7 +454,6 @@ export const pedidosRelations = relations(pedidosTable, ({ one, many }) => ({
   detalles: many(pedidoDetallesTable),
   pagos: many(pagosTable),
   seguimiento: many(seguimientoPedidosTable),
-  ubicaciones: many(ubicacionesRepartidoresTable),
 }));
 
 export const pedidoDetallesRelations = relations(
@@ -489,20 +482,6 @@ export const seguimientoPedidosRelations = relations(
   ({ one }) => ({
     pedido: one(pedidosTable, {
       fields: [seguimientoPedidosTable.pedidoId],
-      references: [pedidosTable.id],
-    }),
-  }),
-);
-
-export const ubicacionesRepartidoresRelations = relations(
-  ubicacionesRepartidoresTable,
-  ({ one }) => ({
-    repartidor: one(repartidoresTable, {
-      fields: [ubicacionesRepartidoresTable.repartidorId],
-      references: [repartidoresTable.id],
-    }),
-    pedido: one(pedidosTable, {
-      fields: [ubicacionesRepartidoresTable.pedidoId],
       references: [pedidosTable.id],
     }),
   }),
@@ -561,7 +540,3 @@ export type InsertSeguimientoPedido =
 export type SelectSeguimientoPedido =
   typeof seguimientoPedidosTable.$inferSelect;
 
-export type InsertUbicacionRepartidor =
-  typeof ubicacionesRepartidoresTable.$inferInsert;
-export type SelectUbicacionRepartidor =
-  typeof ubicacionesRepartidoresTable.$inferSelect;

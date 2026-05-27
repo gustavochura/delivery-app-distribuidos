@@ -158,6 +158,7 @@ export default function RepartidorMapa() {
   } = useLoaderData<typeof loader>();
   const stateFetcher = useFetcher();
   const locationFetcher = useFetcher();
+  const submitLocation = locationFetcher.submit;
   const [driverPoint, setDriverPoint] = useState<DeliveryMapPoint | null>(null);
   const [locationStatus, setLocationStatus] = useState(
     redisConfigured
@@ -200,7 +201,7 @@ export default function RepartidorMapa() {
           };
           setDriverPoint(point);
           setLocationStatus("Enviando ubicacion al middleware Redis.");
-          locationFetcher.submit(
+          submitLocation(
             {
               intent: "actualizar-ubicacion",
               lat: String(point.latitude),
@@ -225,7 +226,7 @@ export default function RepartidorMapa() {
       cancelled = true;
       window.clearInterval(interval);
     };
-  }, [canShareLocation, redisConfigured]);
+  }, [canShareLocation, redisConfigured, submitLocation]);
 
   useEffect(() => {
     if (locationFetcher.data && "saved" in locationFetcher.data) {

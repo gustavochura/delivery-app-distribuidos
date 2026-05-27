@@ -1,7 +1,7 @@
-import { useLoaderData } from "react-router";
-import { and, desc, eq } from "drizzle-orm";
+import { Form, useLoaderData } from "react-router";
+import { and, desc, eq, like } from "drizzle-orm";
 import { db } from "~/database/client.server";
-import { pedidosTable, usuariosTable, clientesTable } from "~/database/schema";
+import { pedidosTable, restaurantesTable, usuariosTable, clientesTable } from "~/database/schema";
 import { requireRestauranteActive } from "~/lib/roles.server";
 import { EmptyState, RoleShell, SearchBar } from "~/components/delivery/common";
 import { OrderCard } from "~/components/delivery/orders";
@@ -22,6 +22,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const url = new URL(request.url);
   const estado = url.searchParams.get("estado");
+  const q = url.searchParams.get("q")?.trim() ?? "";
 
   const rows = await db
     .select({
@@ -30,30 +31,34 @@ export async function loader({ request }: Route.LoaderArgs) {
       total: pedidosTable.total,
       createdAt: pedidosTable.createdAt,
       clienteNombre: usuariosTable.nombre,
+      restauranteNombre: restaurantesTable.nombre,
     })
     .from(pedidosTable)
     .innerJoin(clientesTable, eq(clientesTable.id, pedidosTable.clienteId))
     .innerJoin(usuariosTable, eq(usuariosTable.id, clientesTable.usuarioId))
+    .innerJoin(restaurantesTable, eq(restaurantesTable.id, pedidosTable.restauranteId))
     .where(
-      estado
-        ? and(eq(pedidosTable.restauranteId, restauranteId), eq(pedidosTable.estado, estado))
-        : eq(pedidosTable.restauranteId, restauranteId),
+      and(
+        eq(pedidosTable.restauranteId, restauranteId),
+        estado ? eq(pedidosTable.estado, estado) : undefined,
+        q ? like(usuariosTable.nombre, `%${q}%`) : undefined,
+      ),
     )
     .orderBy(desc(pedidosTable.createdAt));
 
   const pedidos = rows.map((r) => ({
     id: r.id,
-    restauranteNombre: "",
+    restauranteNombre: r.restauranteNombre,
     createdAt: r.createdAt,
     estado: r.estado,
     total: r.total,
   }));
 
-  return { pedidos, estadoActual: estado };
+  return { pedidos, estadoActual: estado, q };
 }
 
 export default function RestaurantePedidos() {
-  const { pedidos, estadoActual } = useLoaderData<typeof loader>();
+  const { pedidos, estadoActual, q } = useLoaderData<typeof loader>();
 
   return (
     <RoleShell
@@ -61,7 +66,10 @@ export default function RestaurantePedidos() {
       description="Gestiona y actualiza el estado de los pedidos."
     >
       <div className="space-y-5">
-        <SearchBar placeholder="Buscar pedido o cliente" />
+        <Form method="get">
+          {estadoActual && <input type="hidden" name="estado" value={estadoActual} />}
+          <SearchBar name="q" placeholder="Buscar por nombre de cliente" defaultValue={q} />
+        </Form>
         <div className="flex flex-wrap gap-2">
           {filters.map((filter) => (
             <a key={filter.value} href={`?estado=${filter.value === estadoActual ? "" : filter.value}`}>

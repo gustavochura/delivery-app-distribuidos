@@ -1,5 +1,5 @@
 import { redirect, useFetcher, useLoaderData } from "react-router";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { db } from "~/database/client.server";
@@ -93,28 +93,41 @@ export async function action({ request, params }: Route.ActionArgs) {
 
   if (intent === "asignar-repartidor") {
     const repartidorId = Number(formData.get("repartidor_id"));
-    if (pedido.estado !== "listo" || pedido.repartidorId) return null;
 
-    const [repartidor] = await db
-      .select({ id: repartidoresTable.id, estado: repartidoresTable.estado })
-      .from(repartidoresTable)
-      .where(eq(repartidoresTable.id, repartidorId))
-      .limit(1);
-    if (!repartidor || repartidor.estado !== "disponible") return null;
+    try {
+      await db.transaction(async (tx) => {
+        const pedidoUpdated = await tx
+          .update(pedidosTable)
+          .set({ repartidorId, estado: "repartidor_asignado" })
+          .where(and(
+            eq(pedidosTable.id, pedidoId),
+            eq(pedidosTable.estado, "listo"),
+            isNull(pedidosTable.repartidorId),
+          ))
+          .returning({ id: pedidosTable.id });
 
-    await db.update(pedidosTable)
-      .set({ repartidorId, estado: "repartidor_asignado" })
-      .where(eq(pedidosTable.id, pedidoId));
+        if (pedidoUpdated.length === 0) throw new Error("conflict");
 
-    await db.insert(seguimientoPedidosTable).values({
-      pedidoId,
-      estado: "repartidor_asignado",
-      descripcion: "Repartidor asignado por el restaurante",
-    });
+        const repartidorUpdated = await tx
+          .update(repartidoresTable)
+          .set({ estado: "ocupado" })
+          .where(and(
+            eq(repartidoresTable.id, repartidorId),
+            eq(repartidoresTable.estado, "disponible"),
+          ))
+          .returning({ id: repartidoresTable.id });
 
-    await db.update(repartidoresTable)
-      .set({ estado: "ocupado" })
-      .where(eq(repartidoresTable.id, repartidorId));
+        if (repartidorUpdated.length === 0) throw new Error("conflict");
+
+        await tx.insert(seguimientoPedidosTable).values({
+          pedidoId,
+          estado: "repartidor_asignado",
+          descripcion: "Repartidor asignado por el restaurante",
+        });
+      });
+    } catch {
+      // El pedido ya fue tomado o el repartidor ya no está disponible
+    }
 
     return null;
   }

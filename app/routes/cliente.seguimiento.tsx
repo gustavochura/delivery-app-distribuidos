@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, redirect, useFetcher, useLoaderData, useRouteLoaderData } from "react-router";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { ArrowLeft, Home, ReceiptText, ShoppingCart, User } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -9,11 +9,11 @@ import {
   pedidosTable,
   repartidoresTable,
   restaurantesTable,
-  ubicacionesRepartidoresTable,
   usuariosTable,
   direccionesTable,
 } from "~/database/schema";
 import { requireCliente } from "~/lib/roles.server";
+import { getDriverLocation } from "~/lib/redis.server";
 import { MobileBottomNav, RoleShell, StatusBadge } from "~/components/delivery/common";
 import type { DeliveryMapPoint } from "~/components/delivery/mapbox-delivery-map";
 import { MapboxDeliveryMap } from "~/components/delivery/mapbox-delivery-map";
@@ -63,14 +63,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       .where(eq(repartidoresTable.id, pedido.repartidorId))
       .limit(1);
     repartidor = rep ?? null;
-
-    const [ub] = await db
-      .select()
-      .from(ubicacionesRepartidoresTable)
-      .where(eq(ubicacionesRepartidoresTable.repartidorId, pedido.repartidorId))
-      .orderBy(desc(ubicacionesRepartidoresTable.updatedAt))
-      .limit(1);
-    ubicacion = ub ?? null;
+    ubicacion = await getDriverLocation(pedidoId);
   }
 
   const [direccion] = await db
@@ -93,7 +86,7 @@ function getPointFromDbLocation(
   ubicacion: Awaited<ReturnType<typeof loader>>["ubicacion"],
 ): DeliveryMapPoint | null {
   if (!ubicacion) return null;
-  return { latitude: ubicacion.latitud, longitude: ubicacion.longitud };
+  return { latitude: ubicacion.lat, longitude: ubicacion.lng };
 }
 
 function formatUpdatedAt(value: string) {
